@@ -35,33 +35,7 @@ class Binance_API:
         else:
             return response_df
 
-    def get_ratio_body_and_shadow(self, symbol):
-        response_df = self.df_candles(symbol, self.config.n_candles)
-        l_open, l_high, l_low, l_close = [list(response_df[el])[-1] for el in ['open', 'high', 'low', 'close']]
-        if (l_close - l_open) != 0:
-            return response_df, abs((l_open - l_low + l_high - l_close) / (l_close - l_open)) < 2
-        return response_df, None
-
     def get_candles(self):
         # get candles data
         candles_basic, colour_last_candle = self.df_candles_and_colour(self.config.symbol_basic_usdt_bc, colour=True)
-        # candles_btc = self.df_candles_and_colour(self.config.symbol_btc_usdt_bc)
         return candles_basic, colour_last_candle
-
-    def get_volume(self):
-        try:
-            # data = self.um_futures_client.klines(symbol=self.config.symbol_btc_usdt_bc,
-            #                                      interval=self.config.period_bc, limit=2)
-            data = self.binance_spot_client.klines(symbol=self.config.symbol_btc_usdt_bc,
-                                                   interval=self.config.period_bc, limit=2)
-            df_data = []
-            for i in range(2):
-                df_data.append({'open': float(data[i][1]), 'high': float(data[i][2]), 'low': float(data[i][3]),
-                                'close': float(data[i][4]), 'volume': float(data[i][5])})
-            last_bc_candle, now_bc_candle = df_data[0], df_data[1]
-            colour = int((now_bc_candle['close'] - now_bc_candle['open']) < 0)
-            ratio_volume = now_bc_candle['volume'] / last_bc_candle['volume']
-
-            return colour, ratio_volume
-        except Exception as err:
-            Logger().logger('BINANCE_ERROR', f'text: {err}')
