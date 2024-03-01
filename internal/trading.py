@@ -40,6 +40,27 @@ class Trading:
 
     # --------------------------------------------------------------------------------------------------------------------
 
+    def exit_from_position(self, new_side, logg_text):
+        try:
+            new_side = ['long', 'short'][['buy', 'sell'].index(new_side)]
+            price_close, self.order_quantity = self.bg_client.get_order(
+                self.config.symbol_basic_usdt_bg, f'close_{new_side}', self.order_quantity)
+
+            self.logg.logger('EXIT_FROM_POSITION', f'{logg_text} ({new_side})')
+
+            self.side = ''
+            self.price_open = None
+            self.order_quantity = None
+            self.trade = True
+
+            self.stop_loss = 0
+            self.rule_break_ma100 = False
+
+        except Exception as err:
+            self.logg.logger(f'ERROR_EXIT_FROM_POSITION', f'status: {logg_text} text: {err}')
+
+    # --------------------------------------------------------------------------------------------------------------------
+
     def start(self):
         self.logg.logger('START_BOT', 'start')
         print('alive')
@@ -53,6 +74,9 @@ class Trading:
                     candles, color = self.bc_client.get_candles()
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
+
+                    if self.rule_break_ma100 is False and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.04:
+                        self.rule_break_ma100 = None
 
                     if self.rule_break_ma100 is None and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.04:
                         self.rule_break_ma100 = True
@@ -81,6 +105,7 @@ class Trading:
                                             self.config.symbol_basic_usdt_bg, 'open_long')
                                         self.time_trade = datetime.datetime.now()
                                         self.trade = False
+                                        self.side = 'buy'
                                         self.take_profit = 2
                                         break
                                     else:
@@ -113,6 +138,7 @@ class Trading:
                                         self.price_open, self.order_quantity = self.bg_client.get_order(
                                             self.config.symbol_basic_usdt_bg, 'open_short')
                                         self.time_trade = datetime.datetime.now()
+                                        self.side = 'sell'
                                         self.trade = False
                                         self.take_profit = 2
                                         break
@@ -124,4 +150,18 @@ class Trading:
                                 else:
                                     break
             else:
-                pass
+                profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
+
+                if profit >= self.take_profit:
+                    self.exit_from_position(self.side, f'exit due take-profit ({profit}%)')
+
+                if profit <= self.stop_loss:
+                    self.exit_from_position(self.side, f'exit due stop-loss ({profit}%)')
+
+                if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
+                    self.exit_from_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
+
+                if profit >= 0.9:
+                    self.stop_loss = 0.1
+                elif profit >= 1.9:
+                    self.stop_loss = 1.5
