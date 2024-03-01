@@ -45,8 +45,8 @@ class Binance_API:
     def get_candles(self):
         # get candles data
         candles_basic, colour_last_candle = self.df_candles_and_colour(self.config.symbol_basic_usdt_bc, colour=True)
-        candles_btc = self.df_candles_and_colour(self.config.symbol_btc_usdt_bc)
-        return candles_basic, colour_last_candle, candles_btc
+        # candles_btc = self.df_candles_and_colour(self.config.symbol_btc_usdt_bc)
+        return candles_basic, colour_last_candle
 
     def get_volume(self):
         try:
