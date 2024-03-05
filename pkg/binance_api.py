@@ -1,7 +1,6 @@
 import pandas as pd
 from config.config import Config
 from pkg.logger import Logger
-# from binance.um_futures import UMFutures
 from binance.spot import Spot
 
 
@@ -9,7 +8,6 @@ class Binance_API:
     def __init__(self):
         self.config = Config()
         self.logg = Logger()
-        # self.um_futures_client = UMFutures()
         self.binance_spot_client = Spot()
 
     def df_candles(self, symbol, n):

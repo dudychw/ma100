@@ -54,12 +54,10 @@ class BitGetApi:
         self.iClient.mix_cancel_order(symbol=symbol, marginCoin='USDT', orderId=order_id)
 
     def get_simple_profit(self, side, price_open, y):
-        profit = None
-        if side == 'buy':
-            profit = ((y - price_open) / price_open) * 100
-        elif side == 'sell':
-            profit = ((price_open - y) / price_open) * 100
-        return round(profit, 3)
+        if side == 'long':
+            return round(((y - price_open) / price_open) * 100, 3)
+        elif side == 'short':
+            return round(((price_open - y) / price_open) * 100, 3)
 
     def bg_get_profit(self, price_open, side, ma100=False, yi=None):
         try:
@@ -75,15 +73,3 @@ class BitGetApi:
         return self.iClient.mix_get_order_details(symbol=symbol, orderId=order_id)['data']['state'] == 'filled'
 
 
-# bg_client = BitGetApi()
-# order_id, price_order, quantity = bg_client.get_order(Config.symbol_basic_usdt_bg, 'open_long', price=0.63)
-# print(order_id)
-# print(price_order)
-# print(quantity)
-#
-# _ = input()
-# info = bg_client.iClient.mix_get_order_details(symbol=Config.symbol_basic_usdt_bg,
-#                                                orderId='1148751341305315333')
-# print(info)
-# {'code': '00000', 'msg': 'success', 'requestTime': 1709609588550, 'data': {'symbol': 'FTMUSDT_UMCBL', 'size': 11, 'orderId': '1148751341305315333', 'clientOid': '1148751341309509648', 'filledQty': 0, 'fee': 0.0, 'price': 0.634, 'state': 'new', 'side': 'open_long', 'timeInForce': 'normal', 'totalProfits': 0.0, 'posSide': 'long', 'marginCoin': 'USDT', 'filledAmount': 0.0, 'orderType': 'limit', 'leverage': '1', 'marginMode': 'fixed', 'reduceOnly': False, 'enterPointSource': 'API', 'tradeSide': 'open_long', 'holdMode': 'double_hold', 'orderSource': 'normal', 'cTime': '1709609583213', 'uTime': '1709609583300'}}
-# {'code': '00000', 'msg': 'success', 'requestTime': 1709609766976, 'data': {'symbol': 'FTMUSDT_UMCBL', 'size': 11, 'orderId': '1148751341305315333', 'clientOid': '1148751341309509648', 'filledQty': 11, 'fee': -0.0013948, 'price': 0.634, 'priceAvg': 0.634, 'state': ' ', 'side': 'open_long', 'timeInForce': 'normal', 'totalProfits': 0.0, 'posSide': 'long', 'marginCoin': 'USDT', 'filledAmount': 6.974, 'orderType': 'limit', 'leverage': '1', 'marginMode': 'fixed', 'reduceOnly': False, 'enterPointSource': 'API', 'tradeSide': 'open_long', 'holdMode': 'double_hold', 'orderSource': 'normal', 'cTime': '1709609583213', 'uTime': '1709609753636'}}
