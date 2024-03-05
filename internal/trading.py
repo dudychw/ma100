@@ -1,4 +1,5 @@
 import datetime
+import sys
 import time
 from pkg.bitget_api import BitGetApi
 from pkg.binance_api import Binance_API
@@ -24,6 +25,7 @@ class Trading:
         self.price_open = None
         self.expected_price_open = None
         self.order_quantity = None
+        self.order_id = None
 
         self.side = ''
         self.time_trade = ''
@@ -80,112 +82,168 @@ class Trading:
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
 
-                    # --------------------------------------------------------------------------------------------------------------------
-                    # rule_break_ma100
                     if self.price_break_ma100 is None and (
                             (not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
                             (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):  # getting first break
                         self.price_break_ma100 = ma100[-1]
-
-                    elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is False and \
-                            self.get_percentage_distance(close[-1]) >= 0.04:
-                        self.rule_break_ma100 = None
-
-                    elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is None and \
-                            self.get_percentage_distance(close[-1]) >= 0.04:
-                        self.rule_break_ma100 = True
-
-                    if self.rule_break_ma100:
-                        if not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]:  # long
-
-                            self.price_break_ma100 = ma100[-1]
-
-                            # update data
-                            time.sleep(self.config.period_int * 60 - 0.01)
-                            candles, color = self.bc_client.get_candles()
-                            close = list(candles['close'])
-                            ma100 = self.indicator.ma100(candles)
-
-                            proof_candle = True
-
-                            while True:
-                                if close[-2] < ma100[-2] and close[-1] > ma100[-1]:
-
-                                    if proof_candle and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.01:
-                                        break
-                                    else:
-                                        proof_candle = False
-
-                                    if not color:
-                                        self.price_open, self.order_quantity = self.bg_client.get_order(
-                                            self.config.symbol_basic_usdt_bg, 'open_long')
-                                        self.time_trade = datetime.datetime.now()
-                                        self.trade = False
-                                        self.side = 'buy'
-                                        self.take_profit = 2
-                                        break
-                                    else:
-                                        time.sleep(self.config.period_int * 60 - 0.01)
-                                        candles, color = self.bc_client.get_candles()
-                                        close = list(candles['close'])
-                                        ma100 = self.indicator.ma100(candles)
-                                else:
-                                    self.price_break_ma100 = ma100[-1]
-                                    break
-
-                        elif color and close[-2] > ma100[-2] and close[-1] < ma100[-1]:  # short
-
-                            self.price_break_ma100 = ma100[-1]
-
-                            # update data
-                            time.sleep(self.config.period_int * 60 - 0.01)
-                            candles, color = self.bc_client.get_candles()
-                            close = list(candles['close'])
-                            ma100 = self.indicator.ma100(candles)
-
-                            proof_candle = True
-
-                            while True:
-                                if close[-2] > ma100[-2] and close[-1] < ma100[-1]:
-
-                                    if proof_candle and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.01:
-                                        break
-                                    else:
-                                        proof_candle = False
-
-                                    if color:
-                                        self.price_open, self.order_quantity = self.bg_client.get_order(
-                                            self.config.symbol_basic_usdt_bg, 'open_short')
-                                        self.time_trade = datetime.datetime.now()
-                                        self.side = 'sell'
-                                        self.trade = False
-                                        self.take_profit = 2
-                                        break
-                                    else:
-                                        time.sleep(self.config.period_int * 60 - 0.01)
-                                        candles, color = self.bc_client.get_candles()
-                                        close = list(candles['close'])
-                                        ma100 = self.indicator.ma100(candles)
-                                else:
-                                    self.price_break_ma100 = ma100[-1]
-                                    break
-
+                        self.time_rule_break_ma100 = datetime.datetime.now()
                     # --------------------------------------------------------------------------------------------------------------------
+                    # rule_break_ma100
+                    try:
+                        if not (self.price_break_ma100 is None) and self.rule_break_ma100 is False and \
+                                self.get_percentage_distance(close[-1]) >= 0.04:
+                            self.rule_break_ma100 = None
 
+                        elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is None and \
+                                self.get_percentage_distance(close[-1]) >= 0.04:
+                            self.rule_break_ma100 = True
+
+                        if self.rule_break_ma100:
+                            if not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]:  # long
+
+                                self.price_break_ma100 = ma100[-1]
+                                self.time_rule_break_ma100 = datetime.datetime.now()
+
+                                # update data
+                                time.sleep(self.config.period_int * 60 - 0.01)
+                                candles, color = self.bc_client.get_candles()
+                                close = list(candles['close'])
+                                ma100 = self.indicator.ma100(candles)
+
+                                proof_candle = True
+
+                                while True:
+                                    if close[-2] < ma100[-2] and close[-1] > ma100[-1]:
+
+                                        if proof_candle and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.01:
+                                            break
+                                        else:
+                                            proof_candle = False
+
+                                        if not color:
+                                            self.price_open, self.order_quantity = self.bg_client.get_order(
+                                                self.config.symbol_basic_usdt_bg, 'open_long')
+                                            self.time_trade = datetime.datetime.now()
+                                            self.trade = False
+                                            self.side = 'buy'
+                                            self.take_profit = 2
+                                            self.stop_loss = -2
+                                            break
+                                        else:
+                                            time.sleep(self.config.period_int * 60 - 0.01)
+                                            candles, color = self.bc_client.get_candles()
+                                            close = list(candles['close'])
+                                            ma100 = self.indicator.ma100(candles)
+                                    else:
+                                        self.price_break_ma100 = ma100[-1]
+                                        self.time_rule_break_ma100 = datetime.datetime.now()
+                                        break
+
+                            elif color and close[-2] > ma100[-2] and close[-1] < ma100[-1]:  # short
+
+                                self.price_break_ma100 = ma100[-1]
+                                self.time_rule_break_ma100 = datetime.datetime.now()
+
+                                # update data
+                                time.sleep(self.config.period_int * 60 - 0.01)
+                                candles, color = self.bc_client.get_candles()
+                                close = list(candles['close'])
+                                ma100 = self.indicator.ma100(candles)
+
+                                proof_candle = True
+
+                                while True:
+                                    if close[-2] > ma100[-2] and close[-1] < ma100[-1]:
+
+                                        if proof_candle and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.01:
+                                            break
+                                        else:
+                                            proof_candle = False
+
+                                        if color:
+                                            self.price_open, self.order_quantity = self.bg_client.get_order(
+                                                self.config.symbol_basic_usdt_bg, 'open_short')
+                                            self.time_trade = datetime.datetime.now()
+                                            self.side = 'sell'
+                                            self.trade = False
+                                            self.take_profit = 2
+                                            self.stop_loss = -2
+                                            break
+                                        else:
+                                            time.sleep(self.config.period_int * 60 - 0.01)
+                                            candles, color = self.bc_client.get_candles()
+                                            close = list(candles['close'])
+                                            ma100 = self.indicator.ma100(candles)
+                                    else:
+                                        self.price_break_ma100 = ma100[-1]
+                                        self.time_rule_break_ma100 = datetime.datetime.now()
+                                        break
+                    except Exception as err:
+                        self.logg.logger('RULE_BREAK_MA100', err)
+                        sys.exit()
                     # --------------------------------------------------------------------------------------------------------------------
+                    #  rule_rebound_ma100
+                    if not (self.price_break_ma100 is None) and self.rule_rebound_ma100 is None and \
+                            self.get_percentage_distance(close[-1]) >= 0.02 and \
+                            (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2:
+                        self.rule_rebound_ma100 = True
+
+                    if self.rule_rebound_ma100:
+                        # отмена старой лимитки
+                        if not (self.order_id is None):
+                            self.bg_client.cancel_order(symbol=self.config.symbol_basic_usdt_bg, order_id=self.order_id)
+
+                        # выставление лимиток
+                        if close[-1] < ma100[-1]:
+                            local_side = 'open_short'
+                        else:
+                            local_side = 'open_long'
+
+                        self.order_id, self.price_open, self.order_quantity = self.bg_client.get_order(
+                            symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=ma100[-1])
+
+                        while True:
+                            if self.bg_client.get_status(symbol=self.config.symbol_basic_usdt_bg,
+                                                         order_id=self.order_id):
+                                self.trade = False
+                                self.time_trade = datetime.datetime.now()
+                                self.take_profit = 1
+                                self.side = ['buy', 'sell'][['open_long', 'open_short'].index(local_side)]
+                                break
+
+                            if (datetime.datetime.now().minute + 1) % self.period == 0 and \
+                                    datetime.datetime.now().second == 59:
+                                break
+
             else:
-                profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
+                if self.rule_break_ma100:
+                    profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
-                if profit >= self.take_profit:
-                    self.close_position(self.side, f'exit due take-profit ({profit}%)')
+                    if profit >= self.take_profit:
+                        self.close_position(self.side, f'exit due take-profit ({profit}%)')
 
-                if profit <= self.stop_loss:
-                    self.close_position(self.side, f'exit due stop-loss ({profit}%)')
+                    if profit <= self.stop_loss:
+                        self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
-                if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
-                    self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
+                    if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
+                        self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
 
-                if profit >= 0.9:
-                    self.stop_loss = 0.1
-                elif profit >= 1.9:
-                    self.stop_loss = 1.5
+                    if profit >= 0.9:
+                        self.stop_loss = 0.1
+                    elif profit >= 1.9:
+                        self.stop_loss = 1.5
+
+                elif self.rule_rebound_ma100:
+                    profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
+
+                    # выход при закрытии свечки в дипазоне -0,05% до +бесконечности,закрываем рыночным ордером
+
+
+                    if profit >= self.take_profit:
+                        self.close_position(self.side, f'exit due take-profit ({profit}%)')
+
+                    if profit <= self.stop_loss:
+                        self.close_position(self.side, f'exit due stop-loss ({profit}%)')
+
+                    if profit >= 0.5:
+                        self.stop_loss = 0.2
