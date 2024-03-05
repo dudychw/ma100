@@ -35,12 +35,14 @@ class Trading:
         # True - идём пробивать и держим позицию
         # False - вышли из позиции, но не откатились на 4% от ma100
         self.rule_break_ma100 = None
+        self.time_rule_break_ma100 = None
+        self.price_break_ma100 = None
 
         self.rule_rebound_ma100 = None
 
     # --------------------------------------------------------------------------------------------------------------------
 
-    def exit_from_position(self, new_side, logg_text):
+    def close_position(self, new_side, logg_text):
         try:
             new_side = ['long', 'short'][['buy', 'sell'].index(new_side)]
             price_close, self.order_quantity = self.bg_client.get_order(
@@ -59,6 +61,9 @@ class Trading:
         except Exception as err:
             self.logg.logger(f'ERROR_EXIT_FROM_POSITION', f'status: {logg_text} text: {err}')
 
+    def get_percentage_distance(self, price_now):
+        return abs(self.price_break_ma100 - price_now) / self.price_break_ma100
+
     # --------------------------------------------------------------------------------------------------------------------
 
     def start(self):
@@ -75,14 +80,25 @@ class Trading:
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
 
-                    if self.rule_break_ma100 is False and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.04:
+                    # --------------------------------------------------------------------------------------------------------------------
+                    # rule_break_ma100
+                    if self.price_break_ma100 is None and (
+                            (not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
+                            (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):  # getting first break
+                        self.price_break_ma100 = ma100[-1]
+
+                    elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is False and \
+                            self.get_percentage_distance(close[-1]) >= 0.04:
                         self.rule_break_ma100 = None
 
-                    if self.rule_break_ma100 is None and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.04:
+                    elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is None and \
+                            self.get_percentage_distance(close[-1]) >= 0.04:
                         self.rule_break_ma100 = True
 
                     if self.rule_break_ma100:
                         if not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]:  # long
+
+                            self.price_break_ma100 = ma100[-1]
 
                             # update data
                             time.sleep(self.config.period_int * 60 - 0.01)
@@ -114,9 +130,12 @@ class Trading:
                                         close = list(candles['close'])
                                         ma100 = self.indicator.ma100(candles)
                                 else:
+                                    self.price_break_ma100 = ma100[-1]
                                     break
 
                         elif color and close[-2] > ma100[-2] and close[-1] < ma100[-1]:  # short
+
+                            self.price_break_ma100 = ma100[-1]
 
                             # update data
                             time.sleep(self.config.period_int * 60 - 0.01)
@@ -148,18 +167,23 @@ class Trading:
                                         close = list(candles['close'])
                                         ma100 = self.indicator.ma100(candles)
                                 else:
+                                    self.price_break_ma100 = ma100[-1]
                                     break
+
+                    # --------------------------------------------------------------------------------------------------------------------
+
+                    # --------------------------------------------------------------------------------------------------------------------
             else:
                 profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
                 if profit >= self.take_profit:
-                    self.exit_from_position(self.side, f'exit due take-profit ({profit}%)')
+                    self.close_position(self.side, f'exit due take-profit ({profit}%)')
 
                 if profit <= self.stop_loss:
-                    self.exit_from_position(self.side, f'exit due stop-loss ({profit}%)')
+                    self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
                 if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
-                    self.exit_from_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
+                    self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
 
                 if profit >= 0.9:
                     self.stop_loss = 0.1
