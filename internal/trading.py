@@ -72,6 +72,7 @@ class Trading:
 
             self.stop_loss = 0
             self.rule_break_ma100 = False
+            self.rule_rebound_ma100 = False
 
         except Exception as err:
             self.logg.logger(f'ERROR_EXIT_FROM_POSITION', f'status: {logg_text} text: {err}')
@@ -110,7 +111,7 @@ class Trading:
                         elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is None and \
                                 self.get_percentage_distance(close[-1]) >= 0.04:
                             self.rule_break_ma100 = True
-                        # ----------------------------------------------------------------------------------------
+
                         if self.rule_break_ma100:
                             trend_direction = 'long' if not color else 'short'
 
@@ -130,8 +131,8 @@ class Trading:
                                     self.rule_break_ma100 = None
                                 else:
                                     while True:
-                                        if ((not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
-                                                (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):
+                                        if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
+                                                (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
 
                                             new_trend_direction = 'long' if not color else 'short'
                                             if new_trend_direction == trend_direction:
@@ -146,7 +147,6 @@ class Trading:
                                             self.time_rule_break_ma100 = datetime.datetime.now()
                                             self.rule_break_ma100 = None
                                             break
-                        # ---------------------------------------------------------------------------------------
 
                     except Exception as err:
                         self.logg.logger('RULE_BREAK_MA100', err)
@@ -154,6 +154,11 @@ class Trading:
                     # --------------------------------------------------------------------------------------------------------------------
                     #  rule_rebound_ma100
                     try:
+                        if not (self.price_break_ma100 is None) and self.rule_rebound_ma100 is False and \
+                                self.get_percentage_distance(close[-1]) >= 0.02 and \
+                                (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2:
+                            self.rule_rebound_ma100 = None
+
                         if not (self.price_break_ma100 is None) and self.rule_rebound_ma100 is None and \
                                 self.get_percentage_distance(close[-1]) >= 0.02 and \
                                 (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2:
@@ -192,9 +197,18 @@ class Trading:
                         sys.exit()
 
             else:
-                if self.rule_break_ma100:
-                    # При не достижении +0.9% и отcкока вниз за ma100 выходим рыночным ордером
+                # data
+                candles, color = self.bc_client.get_candles()
+                close = list(candles['close'])
+                ma100 = self.indicator.ma100(candles)
 
+                if self.rule_break_ma100:
+                    # rebound down
+                    if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
+                            (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
+                        self.close_position(self.side, f'exit due bounce down')
+
+                    # profit
                     profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
                     if profit >= self.take_profit:
@@ -212,9 +226,12 @@ class Trading:
                         self.stop_loss = 1.5
 
                 elif self.rule_rebound_ma100:
-                    profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
-
                     # выход при закрытии свечки в диапазоне -0,05% до +бесконечности, закрываем рыночным ордером
+                    if (self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or \
+                            (self.side == 'long' and close[-1] <= ma100[-1] * 1.005):
+                        self.close_position(self.side, f'exit due failed rebound')
+
+                    profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
                     if profit >= self.take_profit:
                         self.close_position(self.side, f'exit due take-profit ({profit}%)')
