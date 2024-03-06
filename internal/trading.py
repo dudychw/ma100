@@ -42,6 +42,8 @@ class Trading:
         self.proof_candle = True
 
         self.rule_rebound_ma100 = None
+        self.hour_skip_rule = True
+        self.time_hour_skip_rule = None
 
     # --------------------------------------------------------------------------------------------------------------------
     def open_position(self, side):
@@ -161,7 +163,9 @@ class Trading:
 
                         if not (self.price_break_ma100 is None) and self.rule_rebound_ma100 is None and \
                                 self.get_percentage_distance(close[-1]) >= 0.02 and \
-                                (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2:
+                                (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2 and \
+                                not (self.time_hour_skip_rule is None) and \
+                                (datetime.datetime.now() - self.time_hour_skip_rule).seconds / 3600 >= 1:
                             self.rule_rebound_ma100 = True
 
                         if self.rule_rebound_ma100:
@@ -206,7 +210,18 @@ class Trading:
                     # rebound down
                     if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
                             (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
+                        local_side = self.side
                         self.close_position(self.side, f'exit due bounce down')
+
+                        # check rebound for 1-hour blocked rule_rebound_ma100
+                        time.sleep(self.config.period_int * 60 - 0.01)
+                        candles, color = self.bc_client.get_candles()
+                        close = list(candles['close'])
+                        ma100 = self.indicator.ma100(candles)
+
+                        if (local_side == 'long' and close[-1] >= ma100[-1]) or \
+                                (local_side == 'short' and close[-1] <= ma100[-1]):
+                            self.time_hour_skip_rule = datetime.datetime.now()
 
                     # profit
                     profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
