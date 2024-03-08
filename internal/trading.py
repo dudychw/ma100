@@ -96,6 +96,7 @@ class Trading:
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
 
+
                     # getting time first break
                     if self.price_break_ma100 is None and (
                             (not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
@@ -106,13 +107,17 @@ class Trading:
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
                     try:
-                        if not (self.price_break_ma100 is None) and self.rule_break_ma100 is False and \
-                                self.get_percentage_distance(close[-1]) >= 0.04:
-                            self.rule_break_ma100 = None
+                        if not (self.price_break_ma100 is None) and self.rule_break_ma100 is False:
+                            price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                                else list(candles['high'])[-1]
+                            if self.get_percentage_distance(price_for_distance) >= 0.04:
+                                self.rule_break_ma100 = None
 
-                        elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is None and \
-                                self.get_percentage_distance(close[-1]) >= 0.04:
-                            self.rule_break_ma100 = True
+                        elif not (self.price_break_ma100 is None) and self.rule_break_ma100 is None:
+                            price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                                else list(candles['high'])[-1]
+                            if self.get_percentage_distance(price_for_distance) >= 0.04:
+                                self.rule_break_ma100 = True
 
                         if self.rule_break_ma100:
                             trend_direction = 'long' if not color else 'short'
@@ -162,7 +167,7 @@ class Trading:
                     #         self.rule_rebound_ma100 = None
                     #
                     #     if not (self.price_break_ma100 is None) and self.rule_rebound_ma100 is None and \
-                    #             self.get_percentage_distance(close[-1]) >= 0.02 and \
+                    #             self.get_percentage_distance(close[-1]) >= 0.02 and \  # поравить на хаи и лои
                     #             (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2 and \
                     #             not (self.time_hour_skip_rule is None) and \
                     #             (datetime.datetime.now() - self.time_hour_skip_rule).seconds / 3600 >= 1:
