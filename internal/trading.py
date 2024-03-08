@@ -39,7 +39,6 @@ class Trading:
         self.rule_break_ma100 = None
         self.time_rule_break_ma100 = None
         self.price_break_ma100 = None
-        self.proof_candle = True
 
         self.rule_rebound_ma100 = None
         self.hour_skip_rule = True
@@ -92,18 +91,19 @@ class Trading:
             if self.trade:
                 if (datetime.datetime.now().minute + 1) % self.period == 0 and \
                         datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 99990:
-
                     # data
                     candles, color = self.bc_client.get_candles()
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
 
+                    # getting time first break
                     if self.price_break_ma100 is None and (
                             (not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
-                            (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):  # getting first break
+                            (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):
                         self.price_break_ma100 = ma100[-1]
                         self.time_rule_break_ma100 = datetime.datetime.now()
-                    # --------------------------------------------------------------------------------------------------------------------
+
+                    # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
                     try:
                         if not (self.price_break_ma100 is None) and self.rule_break_ma100 is False and \
@@ -129,7 +129,7 @@ class Trading:
                                 close = list(candles['close'])
                                 ma100 = self.indicator.ma100(candles)
 
-                                if self.proof_candle and abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.01:
+                                if abs(ma100[-1] - close[-1]) / ma100[-1] >= 0.01:
                                     self.rule_break_ma100 = None
                                 else:
                                     while True:
@@ -153,7 +153,7 @@ class Trading:
                     except Exception as err:
                         self.logg.logger('RULE_BREAK_MA100', err)
                         sys.exit()
-                    # --------------------------------------------------------------------------------------------------------------------
+                    # ---------------------------------------------------------------------------------------------
                     #  rule_rebound_ma100
                     try:
                         if not (self.price_break_ma100 is None) and self.rule_rebound_ma100 is False and \
@@ -193,14 +193,23 @@ class Trading:
                                     break
 
                                 if (datetime.datetime.now().minute + 1) % self.period == 0 and \
-                                        datetime.datetime.now().second == 59:
+                                        datetime.datetime.now().second >= 58:
                                     break
 
                     except Exception as err:
                         self.logg.logger('RULE_REBOUND_MA100', err)
                         sys.exit()
+                    # ---------------------------------------------------------------------------------------------
 
             else:
+                profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
+
+                if profit >= self.take_profit:
+                    self.close_position(self.side, f'exit due take-profit ({profit}%)')
+
+                if profit <= self.stop_loss:
+                    self.close_position(self.side, f'exit due stop-loss ({profit}%)')
+
                 # data
                 candles, color = self.bc_client.get_candles()
                 close = list(candles['close'])
@@ -224,15 +233,7 @@ class Trading:
                             self.time_hour_skip_rule = datetime.datetime.now()
 
                     # profit
-                    profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
-
-                    if profit >= self.take_profit:
-                        self.close_position(self.side, f'exit due take-profit ({profit}%)')
-
-                    if profit <= self.stop_loss:
-                        self.close_position(self.side, f'exit due stop-loss ({profit}%)')
-
-                    if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
+                    if profit <= self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
                         self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
 
                     if profit >= 0.9:
@@ -245,14 +246,6 @@ class Trading:
                     if (self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or \
                             (self.side == 'long' and close[-1] <= ma100[-1] * 1.005):
                         self.close_position(self.side, f'exit due failed rebound')
-
-                    profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
-
-                    if profit >= self.take_profit:
-                        self.close_position(self.side, f'exit due take-profit ({profit}%)')
-
-                    if profit <= self.stop_loss:
-                        self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
                     if profit >= 0.5:
                         self.stop_loss = 0.2
