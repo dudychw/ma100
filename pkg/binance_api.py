@@ -25,15 +25,19 @@ class Binance_API:
         except Exception as err:
             self.logg.logger('GET_CANDLES_ERROR', f'text: {err}')
 
-    def df_candles_and_colour(self, symbol, colour=False):
-        response_df = self.df_candles(symbol, self.config.n_candles)
+    def df_candles_and_colour(self, symbol, colour=False, n=None):
+        if n is None:
+            response_df = self.df_candles(symbol, self.config.n_candles)
+        else:
+            response_df = self.df_candles(symbol, n)
 
         if colour:
             return response_df, list(response_df['close'])[-1] - list(response_df['open'])[-1] < 0
         else:
             return response_df
 
-    def get_candles(self):
+    def get_candles(self, n=None):
         # get candles data
-        candles_basic, colour_last_candle = self.df_candles_and_colour(self.config.symbol_basic_usdt_bc, colour=True)
+        candles_basic, colour_last_candle = self.df_candles_and_colour(self.config.symbol_basic_usdt_bc, colour=True,
+                                                                       n=n)
         return candles_basic, colour_last_candle

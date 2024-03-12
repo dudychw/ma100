@@ -38,13 +38,13 @@ class BitGetApi:
                 order_id = self.iClient.mix_place_order(symbol=symbol, marginCoin='USDT', size=quantity,
                                                         side=side, orderType='market')['data']['orderId']
                 price_order = self.iClient.mix_get_order_details(symbol=self.config.symbol_basic_usdt_bg,
-                                                                 orderId=order_id)['data']['price']
+                                                                 orderId=order_id)['data']['priceAvg']
                 return price_order, quantity
             else:
                 order_id = self.iClient.mix_place_order(symbol=symbol, marginCoin='USDT', size=quantity,
                                                         side=side, orderType='limit', price=price)['data']['orderId']
                 price_order = self.iClient.mix_get_order_details(symbol=self.config.symbol_basic_usdt_bg,
-                                                                 orderId=order_id)['data']['price']
+                                                                 orderId=order_id)['data']['priceAvg']
                 return order_id, price_order, quantity
 
         except Exception as err:
@@ -59,13 +59,10 @@ class BitGetApi:
         elif side == 'short':
             return round(((price_open - y) / price_open) * 100, 3)
 
-    def bg_get_profit(self, price_open, side, ma100=False, yi=None):
+    def bg_get_profit(self, price_open, side):
         try:
-            if ma100:
-                return self.get_simple_profit(side, price_open, yi)
-            else:
-                price_now = float(self.iClient.mix_get_depth(self.config.symbol_basic_usdt_bg)['data']['asks'][0][0])
-                return self.get_simple_profit(side, price_open, price_now), price_now
+            price_now = float(self.iClient.mix_get_depth(self.config.symbol_basic_usdt_bg)['data']['asks'][0][0])
+            return self.get_simple_profit(side, price_open, price_now), price_now
         except Exception as err:
             self.logg.logger('GET_PROFIT_ERROR', f'text: {err}')
 

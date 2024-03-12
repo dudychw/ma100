@@ -89,27 +89,41 @@ class Trading:
         self.logg.logger('START_BOT', 'start')
         print('alive')
 
+        # getting time first break
+        n = 400
+        candles, color = self.bc_client.get_candles(n=n)
+        close = list(candles['close'])
+        ma100 = self.indicator.ma100(candles)
+        for i in range(n - 1, 1, -1):
+            if ((close[i - 1] < ma100[i - 1] and close[i] > ma100[i]) or
+                    (close[i - 1] > ma100[i - 1] and close[i] < ma100[i])):
+                self.price_break_ma100 = ma100[i]
+                self.time_rule_break_ma100 = [datetime.datetime.fromtimestamp(el / 1000) for el in candles['ts']][
+                                                 i] + datetime.timedelta(minutes=self.period)
+                self.logg.logger('FIRST_BREAK_MA100',
+                                 f'price_break_ma100 = {self.price_break_ma100}')
+                break
+
         while True:
             if self.trade:
                 if (datetime.datetime.now().minute + 1) % self.period == 0 and \
-                        datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 99990:
+                        datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 900000:
                     # data
                     candles, color = self.bc_client.get_candles()
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
 
-                    # getting time first break
+                    # control break ma100
                     if ((not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
                             (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):
                         self.price_break_ma100 = ma100[-1]
                         self.time_rule_break_ma100 = datetime.datetime.now()
-                        self.logg.logger('INITIAL_BREAK_MA100',
+                        self.logg.logger('BREAK_MA100',
                                          f'price_break_ma100 = {self.price_break_ma100}')
 
-                    if not (self.price_break_ma100 is None):
-                        price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
-                            else list(candles['high'])[-1]
-                        self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
+                    price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                        else list(candles['high'])[-1]
+                    self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
 
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
@@ -122,7 +136,7 @@ class Trading:
                         #         self.logg.logger('RESTARTED_RULE_BREAK_MA100',
                         #                          f'price_for_distance = {price_for_distance}')
 
-                        if not (self.price_break_ma100 is None) and self.rule_break_ma100 is None:
+                        if self.rule_break_ma100 is None:
                             price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
                                 else list(candles['high'])[-1]
                             if self.get_percentage_distance(price_for_distance) >= 0.04:
@@ -137,7 +151,7 @@ class Trading:
 
                                 self.trend_direction = 'long' if not color else 'short'
                                 self.price_break_ma100 = ma100[-1]
-                                self.logg.logger('BREAK_MA100',
+                                self.logg.logger('POTENTIAL_BREAK_MA100',
                                                  f'price_break_ma100 = {self.price_break_ma100}')
                                 self.time_rule_break_ma100 = datetime.datetime.now()
 
@@ -272,7 +286,7 @@ class Trading:
                 #     if (self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or \
                 #             (self.side == 'long' and close[-1] <= ma100[-1] * 1.005):
                 #         self.close_position(self.side, f'exit due failed rebound')
-                        # local_side = self.side
+                # local_side = self.side
                 #     # check rebound for 1-hour blocked rule_rebound_ma100
                 #                         # time.sleep(self.config.period_int * 60 - 0.01)
                 #                         # candles, color = self.bc_client.get_candles()
