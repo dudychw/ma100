@@ -118,12 +118,13 @@ class Trading:
                             (color and close[-2] > ma100[-2] and close[-1] < ma100[-1])):
                         self.price_break_ma100 = ma100[-1]
                         self.time_rule_break_ma100 = datetime.datetime.now()
+                        self.trend_direction = 'long' if not color else 'short'
                         self.logg.logger('BREAK_MA100',
-                                         f'price_break_ma100 = {self.price_break_ma100}')
+                                         f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}')
 
-                    price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
-                        else list(candles['high'])[-1]
-                    self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
+                    # price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                    #     else list(candles['high'])[-1]
+                    # self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
 
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
@@ -152,7 +153,8 @@ class Trading:
                                 self.trend_direction = 'long' if not color else 'short'
                                 self.price_break_ma100 = ma100[-1]
                                 self.logg.logger('POTENTIAL_BREAK_MA100',
-                                                 f'price_break_ma100 = {self.price_break_ma100}')
+                                                 f'price_break_ma100 = {self.price_break_ma100}; '
+                                                 f'side = {self.trend_direction}')
                                 self.time_rule_break_ma100 = datetime.datetime.now()
 
                                 # update data for proof_candle
@@ -175,7 +177,9 @@ class Trading:
                                                 self.open_position(self.trend_direction)
                                                 break
                                             else:
-                                                self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}')
+                                                self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
+                                                                                          f'side = {new_trend_direction}')
+                                                count_attempt += 1
                                                 time.sleep(self.config.period_int * 60 - 0.05)
                                                 candles, color = self.bc_client.get_candles()
                                                 close = list(candles['close'])

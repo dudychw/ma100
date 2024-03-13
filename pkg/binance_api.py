@@ -32,6 +32,7 @@ class Binance_API:
             response_df = self.df_candles(symbol, n)
 
         if colour:
+            # True - red, False - green
             return response_df, list(response_df['close'])[-1] - list(response_df['open'])[-1] < 0
         else:
             return response_df
