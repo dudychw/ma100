@@ -87,7 +87,7 @@ class Trading:
 
     def start(self):
         self.logg.logger('START_BOT', 'start')
-        print('alive')
+        print('\nalive')
 
         # getting time first break
         n = 400
@@ -122,9 +122,9 @@ class Trading:
                         self.logg.logger('BREAK_MA100',
                                          f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}')
 
-                    # price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
-                    #     else list(candles['high'])[-1]
-                    # self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
+                    price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                        else list(candles['high'])[-1]
+                    self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
 
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
