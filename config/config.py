@@ -1,14 +1,8 @@
 class Config:
     # basic data
-    period_int = 15
+    period_int = 5  # 15
     basic_symbol = 'FTM'
     n_candles = 101
-    stop_loss = -1.5
-
-    # other data
-    check = 2
-    ratio_volume = 1.45
-    ratio_shadows = 1
 
     api_key = "bg_10555cdfc82183eccfe443a06f41fff3"
     api_secret = "e8f1fb27547e8ea44108de7cb98b306fdfb1b50de746bfba8d09385ab24c556b"

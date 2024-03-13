@@ -54,8 +54,8 @@ class Trading:
             self.time_trade = datetime.datetime.now()
             self.side = side
             self.trade = False
-            self.take_profit = 2
-            self.stop_loss = -2
+            self.take_profit = 1  # 2
+            self.stop_loss = -1  # -2
 
         except Exception as err:
             self.logg.logger(f'ERROR_OPEN_POSITION', f'text: {err}')
@@ -140,7 +140,8 @@ class Trading:
                         if self.rule_break_ma100 is None:
                             price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
                                 else list(candles['high'])[-1]
-                            if self.get_percentage_distance(price_for_distance) >= 0.04:
+                            # if self.get_percentage_distance(price_for_distance) >= 0.04:
+                            if self.get_percentage_distance(price_for_distance) >= 0.01:
                                 self.rule_break_ma100 = True
                                 self.logg.logger('APPROVE_RULE_BREAK_MA100',
                                                  f'price_for_distance = {price_for_distance}')
@@ -165,11 +166,11 @@ class Trading:
 
                                         new_trend_direction = 'long' if not color else 'short'
                                         if count_attempt != 0 and new_trend_direction == self.trend_direction:
-                                            if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
-                                                self.rule_break_ma100 = None
-                                                self.logg.logger('1_PERCENT_BREAK', 'candles break ma100 by 1%')
-                                            else:
-                                                self.open_position(self.trend_direction)
+                                            # if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
+                                            #     self.rule_break_ma100 = None
+                                            #     self.logg.logger('1_PERCENT_BREAK', 'candles break ma100 by 1%')
+                                            # else:
+                                            self.open_position(self.trend_direction)
                                             break
                                         else:
                                             self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
@@ -272,15 +273,23 @@ class Trading:
                             self.close_position(self.side, f'exit due bounce down')
 
                     # profit
-                    if profit <= self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
+                    # if profit <= self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
+                    if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 1:
                         self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
 
-                    if self.stop_loss == -2 and profit >= 0.9:
+                    if self.stop_loss == -1 and profit >= 0.5:
                         self.stop_loss = 0.1
                         self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
-                    elif self.stop_loss == 0.1 and profit >= 1.9:
-                        self.stop_loss = 1.5
+                    elif self.stop_loss == 0.1 and profit >= 0.9:
+                        self.stop_loss = 0.5
                         self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
+
+                    # if self.stop_loss == -2 and profit >= 0.9:
+                    #     self.stop_loss = 0.1
+                    #     self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
+                    # elif self.stop_loss == 0.1 and profit >= 1.9:
+                    #     self.stop_loss = 1.5
+                    #     self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
 
                 # elif self.rule_rebound_ma100:
                 #     # выход при закрытии свечки в диапазоне -0,05% до +бесконечности, закрываем рыночным ордером
