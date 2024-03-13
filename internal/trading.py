@@ -164,7 +164,7 @@ class Trading:
                                     if (close[-1] >= ma100[-1] and self.trend_direction == 'long') or (
                                             close[-1] <= ma100[-1] and self.trend_direction == 'short'):
 
-                                        new_trend_direction = 'long' if not color else 'short'
+                                        new_trend_direction = 'long' if color else 'short'
                                         if count_attempt != 0 and new_trend_direction == self.trend_direction:
                                             # if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
                                             #     self.rule_break_ma100 = None
