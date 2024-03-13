@@ -157,40 +157,35 @@ class Trading:
                                                  f'side = {self.trend_direction}')
                                 self.time_rule_break_ma100 = datetime.datetime.now()
 
-                                # update data for proof_candle
-                                time.sleep(self.config.period_int * 60 - 0.05)
-                                candles, color = self.bc_client.get_candles()
-                                close = list(candles['close'])
-                                ma100 = self.indicator.ma100(candles)
+                                # found proof candle
+                                count_attempt = 0
+                                while True:
+                                    if (close[-1] >= ma100[-1] and self.trend_direction == 'long') or (
+                                            close[-1] <= ma100[-1] and self.trend_direction == 'short'):
 
-                                if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
-                                    self.rule_break_ma100 = None
-                                    self.logg.logger('1_PERCENT_BREAK', 'candles break ma100 by 1%')
-                                else:
-                                    count_attempt = 1
-                                    while True:
-                                        if (close[-1] >= ma100[-1] and self.trend_direction == 'long') or (
-                                                close[-1] <= ma100[-1] and self.trend_direction == 'short'):
-
-                                            new_trend_direction = 'long' if not color else 'short'
-                                            if new_trend_direction == self.trend_direction:
-                                                self.open_position(self.trend_direction)
-                                                break
+                                        new_trend_direction = 'long' if not color else 'short'
+                                        if count_attempt != 0 and new_trend_direction == self.trend_direction:
+                                            if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
+                                                self.rule_break_ma100 = None
+                                                self.logg.logger('1_PERCENT_BREAK', 'candles break ma100 by 1%')
                                             else:
-                                                self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
-                                                                                          f'side = {new_trend_direction}')
-                                                count_attempt += 1
-                                                time.sleep(self.config.period_int * 60 - 0.05)
-                                                candles, color = self.bc_client.get_candles()
-                                                close = list(candles['close'])
-                                                ma100 = self.indicator.ma100(candles)
-                                        else:
-                                            self.price_break_ma100 = ma100[-1]
-                                            self.logg.logger('BACK_BREAK_MA100',
-                                                             f'price_break_ma100 = {self.price_break_ma100}')
-                                            self.time_rule_break_ma100 = datetime.datetime.now()
-                                            self.rule_break_ma100 = None
+                                                self.open_position(self.trend_direction)
                                             break
+                                        else:
+                                            self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
+                                                                                      f'side = {new_trend_direction}')
+                                            count_attempt += 1
+                                            time.sleep(self.config.period_int * 60 - 0.05)
+                                            candles, color = self.bc_client.get_candles()
+                                            close = list(candles['close'])
+                                            ma100 = self.indicator.ma100(candles)
+                                    else:
+                                        self.price_break_ma100 = ma100[-1]
+                                        self.logg.logger('BACK_BREAK_MA100',
+                                                         f'price_break_ma100 = {self.price_break_ma100}')
+                                        self.time_rule_break_ma100 = datetime.datetime.now()
+                                        self.rule_break_ma100 = None
+                                        break
 
                     except Exception as err:
                         self.logg.logger('ERROR_RULE_BREAK_MA100', err)
@@ -270,9 +265,11 @@ class Trading:
 
                 if self.rule_break_ma100:
                     # rebound down
-                    if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
-                            (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
-                        self.close_position(self.side, f'exit due bounce down')
+                    if (datetime.datetime.now().minute + 1) % self.period == 0 and \
+                            datetime.datetime.now().second == 59:
+                        if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
+                                (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
+                            self.close_position(self.side, f'exit due bounce down')
 
                     # profit
                     if profit <= self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
