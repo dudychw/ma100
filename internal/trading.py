@@ -123,10 +123,10 @@ class Trading:
                         self.logg.logger('BREAK_MA100',
                                          f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}')
 
-                    price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
-                        else list(candles['high'])[-1]
-                    self.logg.logger('PERCENT_DISTANCE',
-                                     f'{round(self.get_percentage_distance(price_for_distance) * 100, 2)}%')
+                    # price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                    #     else list(candles['high'])[-1]
+                    # self.logg.logger('PERCENT_DISTANCE',
+                    #                  f'{round(self.get_percentage_distance(price_for_distance) * 100, 2)}%')
 
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
@@ -136,13 +136,13 @@ class Trading:
                                     self.get_percentage_distance(list(candles['low'])[-1]) >= 0.007:
                                 self.rule_break_ma100 = True
                                 self.logg.logger('APPROVE_RULE_BREAK_MA100',
-                                                 f'price_for_distance = {price_for_distance}; '
+                                                 f'price_for_distance = {list(candles["low"])[-1]}; '
                                                  f'side_accuses = long')
                             elif self.trend_direction == 'long' and close[-1] > ma100[-1] and \
                                     self.get_percentage_distance(list(candles['high'])[-1]) >= 0.007:
                                 self.rule_break_ma100 = True
                                 self.logg.logger('APPROVE_RULE_BREAK_MA100',
-                                                 f'price_for_distance = {price_for_distance}; '
+                                                 f'price_for_distance = {list(candles["high"])[-1]}; '
                                                  f'side_accuses = short')
 
                         if self.rule_break_ma100:
