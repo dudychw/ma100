@@ -29,6 +29,7 @@ class Trading:
 
         self.side = ''
         self.trend_direction = None
+        self.internal_trend_direction = None
         self.time_trade = ''
 
         self.stop_loss = 0
@@ -162,8 +163,7 @@ class Trading:
                                     if (close[-1] >= ma100[-1] and self.trend_direction == 'long') or (
                                             close[-1] <= ma100[-1] and self.trend_direction == 'short'):
 
-                                        new_trend_direction = 'long' if not color else 'short'
-                                        if count_attempt != 0 and new_trend_direction == self.trend_direction:
+                                        if count_attempt != 0 and self.internal_trend_direction == self.trend_direction:
                                             # if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
                                             #     self.rule_break_ma100 = None
                                             #     self.logg.logger('1_PERCENT_BREAK', 'candles break ma100 by 1%')
@@ -172,10 +172,11 @@ class Trading:
                                             break
                                         else:
                                             self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
-                                                                                      f'side = {new_trend_direction}')
+                                                                                      f'side = {self.internal_trend_direction}')
                                             count_attempt += 1
                                             time.sleep(self.config.period_int * 60 - 0.05)
                                             candles, color = self.bc_client.get_candles()
+                                            self.internal_trend_direction = 'long' if not color else 'short'
                                             close = list(candles['close'])
                                             ma100 = self.indicator.ma100(candles)
                                     else:
