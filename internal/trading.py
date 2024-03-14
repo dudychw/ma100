@@ -101,8 +101,9 @@ class Trading:
                 self.price_break_ma100 = ma100[i]
                 self.time_rule_break_ma100 = [datetime.datetime.fromtimestamp(el / 1000) for el in candles['ts']][
                                                  i] + datetime.timedelta(minutes=self.period)
+                self.trend_direction = 'short' if close[-1] < self.price_break_ma100 else 'long'
                 self.logg.logger('FIRST_BREAK_MA100',
-                                 f'price_break_ma100 = {self.price_break_ma100}')
+                                 f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}')
                 break
 
         while True:
