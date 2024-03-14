@@ -54,8 +54,8 @@ class Trading:
             self.time_trade = datetime.datetime.now()
             self.side = side
             self.trade = False
-            self.take_profit = 1  # 2
-            self.stop_loss = -1  # -2
+            self.take_profit = 0.5  # 2
+            self.stop_loss = -0.5  # -2
 
         except Exception as err:
             self.logg.logger(f'ERROR_OPEN_POSITION', f'text: {err}')
@@ -130,22 +130,19 @@ class Trading:
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
                     try:
-                        # if not (self.price_break_ma100 is None) and self.rule_break_ma100 is False:
-                        #     price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
-                        #         else list(candles['high'])[-1]
-                        #     if self.get_percentage_distance(price_for_distance) >= 0.04:
-                        #         self.rule_break_ma100 = None
-                        #         self.logg.logger('RESTARTED_RULE_BREAK_MA100',
-                        #                          f'price_for_distance = {price_for_distance}')
-
                         if self.rule_break_ma100 is None:
-                            price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
-                                else list(candles['high'])[-1]
-                            # if self.get_percentage_distance(price_for_distance) >= 0.04:
-                            if self.get_percentage_distance(price_for_distance) >= 0.01:
+                            if self.trend_direction == 'short' and close[-1] < ma100[-1] and \
+                                    self.get_percentage_distance(list(candles['low'])[-1]) >= 0.007:
                                 self.rule_break_ma100 = True
                                 self.logg.logger('APPROVE_RULE_BREAK_MA100',
-                                                 f'price_for_distance = {price_for_distance}')
+                                                 f'price_for_distance = {price_for_distance}; '
+                                                 f'side_accuses = long')
+                            elif self.trend_direction == 'long' and close[-1] > ma100[-1] and \
+                                    self.get_percentage_distance(list(candles['high'])[-1]) >= 0.007:
+                                self.rule_break_ma100 = True
+                                self.logg.logger('APPROVE_RULE_BREAK_MA100',
+                                                 f'price_for_distance = {price_for_distance}; '
+                                                 f'side_accuses = short')
 
                         if self.rule_break_ma100:
 
@@ -183,6 +180,7 @@ class Trading:
                                             ma100 = self.indicator.ma100(candles)
                                     else:
                                         self.price_break_ma100 = ma100[-1]
+                                        self.trend_direction = 'long' if not color else 'short'
                                         self.logg.logger('BACK_BREAK_MA100',
                                                          f'price_break_ma100 = {self.price_break_ma100}')
                                         self.time_rule_break_ma100 = datetime.datetime.now()
@@ -278,12 +276,12 @@ class Trading:
                     if profit < self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 1:
                         self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
 
-                    if self.stop_loss == -1 and profit >= 0.5:
-                        self.stop_loss = 0.1
-                        self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
-                    elif self.stop_loss == 0.1 and profit >= 0.9:
-                        self.stop_loss = 0.5
-                        self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
+                    # if self.stop_loss == -0.5 and profit >= 0.5:
+                    #     self.stop_loss = 0.1
+                    #     self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
+                    # elif self.stop_loss == 0.1 and profit >= 0.9:
+                    #     self.stop_loss = 0.5
+                    #     self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
 
                     # if self.stop_loss == -2 and profit >= 0.9:
                     #     self.stop_loss = 0.1
