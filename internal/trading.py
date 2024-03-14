@@ -124,7 +124,8 @@ class Trading:
 
                     price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
                         else list(candles['high'])[-1]
-                    self.logg.logger('PERCENT_DISTANCE', f'{self.get_percentage_distance(price_for_distance)}%')
+                    self.logg.logger('PERCENT_DISTANCE',
+                                     f'{round(self.get_percentage_distance(price_for_distance) * 100, 2)}%')
 
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
@@ -164,7 +165,7 @@ class Trading:
                                     if (close[-1] >= ma100[-1] and self.trend_direction == 'long') or (
                                             close[-1] <= ma100[-1] and self.trend_direction == 'short'):
 
-                                        new_trend_direction = 'long' if color else 'short'
+                                        new_trend_direction = 'long' if not color else 'short'
                                         if count_attempt != 0 and new_trend_direction == self.trend_direction:
                                             # if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
                                             #     self.rule_break_ma100 = None
