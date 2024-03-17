@@ -55,7 +55,7 @@ class Trading:
             self.time_trade = datetime.datetime.now()
             self.side = side
             self.trade = False
-            self.take_profit = 2
+            # self.take_profit = 2
             self.stop_loss = -2
 
         except Exception as err:
@@ -74,7 +74,7 @@ class Trading:
             self.trade = True
 
             self.stop_loss = 0
-            self.take_profit = 0
+            # self.take_profit = 0
             self.rule_break_ma100 = None
             self.internal_trend_direction = None
             # self.rule_rebound_ma100 = False
@@ -92,7 +92,7 @@ class Trading:
         print('\nalive')
 
         # getting time first break
-        n = 400
+        n = 500
         candles, color = self.bc_client.get_candles(n=n)
         close = list(candles['close'])
         ma100 = self.indicator.ma100(candles)
@@ -166,11 +166,7 @@ class Trading:
                                             close[-1] <= ma100[-1] and self.trend_direction == 'short'):
 
                                         if count_attempt != 0 and self.internal_trend_direction == self.trend_direction:
-                                            if abs(self.price_break_ma100 - close[-1]) / self.price_break_ma100 >= 0.01:
-                                                self.rule_break_ma100 = None
-                                                self.logg.logger('1_PERCENT_BREAK', 'candles break ma100 by 1%')
-                                            else:
-                                                self.open_position(self.trend_direction)
+                                            self.open_position(self.trend_direction)
                                             break
                                         else:
                                             self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
@@ -255,8 +251,8 @@ class Trading:
             else:
                 profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
-                if profit >= self.take_profit:
-                    self.close_position(self.side, f'exit due take-profit ({profit}%)')
+                # if profit >= self.take_profit:
+                #     self.close_position(self.side, f'exit due take-profit ({profit}%)')
 
                 if profit <= self.stop_loss:
                     self.close_position(self.side, f'exit due stop-loss ({profit}%)')
@@ -274,16 +270,14 @@ class Trading:
                                 (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
                             self.close_position(self.side, f'exit due bounce down')
 
-                    # profit
-                    if profit <= self.take_profit and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
-                        self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
+                    # trailing stop-loss
+                    if profit >= 0.7:
+                        self.stop_loss = max(profit - 0.4, self.stop_loss)
 
-                    if self.stop_loss == -2 and profit >= 0.9:
-                        self.stop_loss = 0.1
-                        self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
-                    elif self.stop_loss == 0.1 and profit >= 1.9:
-                        self.stop_loss = 1.5
-                        self.logg.logger('STOP_LOSS', f'stop-loss = {self.stop_loss}')
+                    if profit < 0.7 and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 3:
+                        self.close_position(self.side, f'exit due 3 hour stagnation ({profit}%)')
+
+
 
                 # elif self.rule_rebound_ma100:
                 #     # выход при закрытии свечки в диапазоне -0,05% до +бесконечности, закрываем рыночным ордером
