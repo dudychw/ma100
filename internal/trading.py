@@ -272,7 +272,7 @@ class Trading:
 
                     # trailing stop-loss
                     if profit >= 0.7:
-                        self.stop_loss = max(profit - 0.4, self.stop_loss)
+                        self.stop_loss = max(profit - 0.5, self.stop_loss)
 
                     if profit < 0.7 and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 3:
                         self.close_position(self.side, f'exit due 3 hour stagnation ({profit}%)')
