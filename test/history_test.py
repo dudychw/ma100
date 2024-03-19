@@ -20,7 +20,7 @@ class HistoryTest:
         self.period = self.config.period_int
 
     def history_test(self):
-        n = 295
+        n = 595
 
         time_end = datetime.datetime.now()
         time_start = time_end - datetime.timedelta(days=5)

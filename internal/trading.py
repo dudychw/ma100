@@ -32,7 +32,7 @@ class Trading:
         self.internal_trend_direction = None
         self.time_trade = ''
 
-        self.stop_loss = 0
+        self.stop_loss = -1000
         self.take_profit = 0
 
         # None - пункт не активизирован
@@ -56,7 +56,7 @@ class Trading:
             self.side = side
             self.trade = False
             # self.take_profit = 2
-            self.stop_loss = -2
+            # self.stop_loss = -2
 
         except Exception as err:
             self.logg.logger(f'ERROR_OPEN_POSITION', f'text: {err}')
@@ -73,7 +73,7 @@ class Trading:
             self.order_quantity = None
             self.trade = True
 
-            self.stop_loss = 0
+            self.stop_loss = -1000
             # self.take_profit = 0
             self.rule_break_ma100 = None
             self.internal_trend_direction = None
@@ -271,10 +271,10 @@ class Trading:
                             self.close_position(self.side, f'exit due bounce down')
 
                     # trailing stop-loss
-                    if profit >= 0.7:
+                    if profit >= 1.5:
                         self.stop_loss = max(profit - 0.5, self.stop_loss)
 
-                    if profit < 0.7 and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 3:
+                    if profit < 1.5 and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
                         self.close_position(self.side, f'exit due 3 hour stagnation ({profit}%)')
 
 
