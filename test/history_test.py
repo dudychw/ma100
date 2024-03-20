@@ -20,7 +20,7 @@ class HistoryTest:
         self.period = self.config.period_int
 
     def history_test(self):
-        n = 595
+        n = 360
 
         time_end = datetime.datetime.now()
         time_start = time_end - datetime.timedelta(days=5)
@@ -75,21 +75,21 @@ class HistoryTest:
                 a = list(candles['low'])[data[i][0]:data[i + 1][0]]
                 ind = proof_cndl_perc.index(False) + 1 if len(a) != 1 and False in proof_cndl_perc else None
                 perc_dist = [round((break_ma100 - el) / break_ma100 * 100, 2) for el in a]
-            # print(perc_dist)
+            # print(f'{data[i][3]} - {data[i + 1][3].time()}', len(perc_dist) >= 9 and max(perc_dist[8:]) >= 4, perc_dist)
 
             ans['time'].append(f'{data[i][3]} - {data[i + 1][3].time()}')
             ans['trend'].append(data[i][1])
             ans['first_cndl%'].append(perc_dist[0])
-            ans['max_cndl%'].append(max(perc_dist))
+            ans['max_cndl%'].append(max(perc_dist[8:]) if len(perc_dist) >= 9 else None)
             ans['not_back_break'].append(len(perc_dist) != 1)
-            ans['is_4%distance'].append(max(perc_dist) >= 4)
+            ans['is_4%distance'].append(len(perc_dist) >= 9 and max(perc_dist[8:]) >= 4)
             ans['is_1%_first_cndl'].append(perc_dist[0] < 1)
             ans['is_1%_proof_cndl'].append(not (ind is None) and perc_dist[ind] < 1)
             ans['proof_cndl%'].append(perc_dist[ind] if not (ind is None) else None)
 
             d = round(abs(close[ind - 1] - break_ma100) / break_ma100 * 100, 2) if not (ind is None) else None
             ans['open_proof_cndl'].append(d)
-            ans['profit%'].append(max(perc_dist) - d if not (ind is None) else None)
+            ans['profit%'].append(max(perc_dist) - d if not (ind is None) and len(perc_dist) >= 9 else False)
 
         ans['is_4%distance'] = ans['is_4%distance'][:-1]
         out = pd.DataFrame.from_dict(ans)
@@ -98,19 +98,20 @@ class HistoryTest:
         # out = out.loc[
         #     (out['not_back_break']) & (out['is_4%distance']) & (out['is_1%_first_cndl']) & (out['is_1%_proof_cndl'])]
         out = out.loc[
-            (out['not_back_break']) & (out['is_4%distance']) & (out['proof_cndl%'] > 0)]
+            (out['not_back_break']) & (out['is_4%distance']) & (out['proof_cndl%'] > 0) & (out['profit%'])]
         # print(out.to_string())
         profit = 1
         dp = []
         for el in list(out['profit%']):
-            if el < 1:
+            if el < 1.5:
                 profit *= 0.98
                 dp.append(el)
             else:
-                profit *= (el / 100 + 1)
+                profit *= (el / (3 * 100) + 1)
+                # profit *= 1.01
         profit = round((profit - 1) * 100, 2)
-        print(len(dp), sorted(dp))
-        print(sum(dp) / len(dp))
+        # print(len(dp), sorted(dp))
+        # print(sum(dp) / len(dp))
 
         path = './test/history_test.txt'
 
