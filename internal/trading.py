@@ -133,7 +133,7 @@ class Trading:
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
                     try:
-                        if self.rule_break_ma100 is None and (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2:
+                        if self.rule_break_ma100 is None and (datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 4:
                             if self.trend_direction == 'short' and close[-1] < ma100[-1] and \
                                     self.get_percentage_distance(list(candles['low'])[-1]) >= 0.04:
                                 self.rule_break_ma100 = True

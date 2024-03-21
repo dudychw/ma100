@@ -2,6 +2,7 @@ import datetime
 
 from internal.trading import Trading
 from pkg.logger import Logger
+
 # from test.history_test import HistoryTest
 try:
     Trading().start()
