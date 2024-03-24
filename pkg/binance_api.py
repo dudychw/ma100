@@ -25,7 +25,7 @@ class Binance_API:
                 'close': [float(el[4]) for el in candles]
             })
         except Exception as err:
-            self.logg.logger('GET_CANDLES_ERROR', f'text: {err}')
+            self.logg.logger('GET_CANDLES_DF_ERROR', f'text: {err}')
 
     def df_candles(self, symbol, n):
         try:
@@ -40,7 +40,11 @@ class Binance_API:
                 'close': [float(el[4]) for el in candles]
             })
         except Exception as err:
-            self.logg.logger('GET_CANDLES_ERROR', f'text: {err}')
+            # (500, '{"code":-1001,"msg":"Internal error; unable to process your request. Please try again."}')
+            if '1001' in err[1]:
+                self.df_candles(symbol, n)
+            else:
+                self.logg.logger('GET_CANDLES_ERROR', f'text: {err}')
 
     def df_candles_and_colour(self, symbol, colour=False, n=None):
         if n is None:
