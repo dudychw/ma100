@@ -20,10 +20,10 @@ class HistoryTest:
 
         self.period = self.config.period_int
         self.hour_skip = 0
-        self.stop_hour_skip = 14
+        self.stop_hour_skip = 10
 
     def history_test(self):
-        n = 360 * 2
+        n = 360 * 3
 
         time_end = datetime.datetime.now()
         time_start = time_end - datetime.timedelta(days=5)
@@ -104,14 +104,14 @@ class HistoryTest:
             ans['is_4%distance'] = ans['is_4%distance'][:-1]
             out = pd.DataFrame.from_dict(ans)
 
-            path = './test/history_test_all.txt'
+            path = './test/result/history_test_all.txt'
 
-            with open(path, "w") as f:
-                f.write("")
-
-            with open(path, 'a') as f:
-                text = out.to_string(header=True, index=True)
-                f.write(text)
+            # with open(path, "w") as f:
+            #     f.write("")
+            #
+            # with open(path, 'a') as f:
+            #     text = out.to_string(header=True, index=True)
+            #     f.write(text)
             # -------------------------------------------------
 
             out_order = out.loc[
@@ -125,21 +125,21 @@ class HistoryTest:
                     c += 1
                 else:
                     # profit *= (el / (3 * 100) + 1)
-                    profit *= random.randint(1010, 1040) / 1000
+                    profit *= 1.02
             profit = round((profit - 1) * 100, 2)
 
             out_order = out_order.sort_values('profit%', ascending=False)
 
-            path = './test/history_test.txt'
+            # path = './test/result/history_test.txt'
+
+            # with open(path, "w") as f:
+            #     f.write("")
             #
-            with open(path, "w") as f:
-                f.write("")
+            # with open(path, 'a') as f:
+            #     text = out_order.to_string(header=True, index=True)
+            #     f.write(text)
 
-            with open(path, 'a') as f:
-                text = out_order.to_string(header=True, index=True)
-                f.write(text)
-
-            with open('./test/result.txt', 'a') as f:
+            with open('./test/result/result.txt', 'a') as f:
                 a = round((c / len(list(out_order['profit%']))) * 100, 2)
                 f.write(
                     f"{datetime.datetime.now()} | fail - {c} ({a}%); good - {len(list(out_order['profit%'])) - c} ({100 - a}%) | profit: {profit} | time_test: {n + 5} | time_skip: {self.hour_skip}\n")

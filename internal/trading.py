@@ -104,7 +104,7 @@ class Trading:
                                                  i] + datetime.timedelta(minutes=self.period)
                 self.trend_direction = 'short' if close[-1] < self.price_break_ma100 else 'long'
                 self.logg.logger('FIRST_BREAK_MA100',
-                                 f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}')
+                                 f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}; time_break = {self.time_rule_break_ma100}')
                 break
 
         while True:
@@ -123,7 +123,7 @@ class Trading:
                         self.time_rule_break_ma100 = datetime.datetime.now()
                         self.trend_direction = 'long' if not color else 'short'
                         self.logg.logger('BREAK_MA100',
-                                         f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}')
+                                         f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction}; time_break = {self.time_rule_break_ma100}')
 
                     # price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
                     #     else list(candles['high'])[-1]
