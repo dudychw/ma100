@@ -23,7 +23,7 @@ class HistoryTest:
         self.stop_hour_skip = 10
 
     def history_test(self):
-        n = 360 * 3
+        n = 360 * 1
 
         time_end = datetime.datetime.now()
         time_start = time_end - datetime.timedelta(days=5)
@@ -125,7 +125,7 @@ class HistoryTest:
                     c += 1
                 else:
                     # profit *= (el / (3 * 100) + 1)
-                    profit *= 1.02
+                    profit *= random.randint(1010, 1040) / 1000
             profit = round((profit - 1) * 100, 2)
 
             out_order = out_order.sort_values('profit%', ascending=False)
