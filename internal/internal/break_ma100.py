@@ -84,7 +84,6 @@ class BreakMa100:
     # --------------------------------------------------------------------------------------------------------------------
 
     def start(self):
-        self.logg.logger('START_BOT', 'start')
         print('\nalive')
 
         # getting data  first break

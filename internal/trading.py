@@ -1,4 +1,5 @@
 from internal.internal.break_ma100 import BreakMa100
+from internal.internal.rebound import Rebound
 from pkg.logger import Logger
 
 
@@ -15,4 +16,4 @@ class Trading:
         if strategy == 'break_ma100':
             BreakMa100().start()
         if strategy == 'rebound':
-            pass
+            Rebound().start()

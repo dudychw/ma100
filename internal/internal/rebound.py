@@ -8,7 +8,7 @@ from pkg.logger import Logger
 from config.config import Config
 
 
-class Trading:
+class Rebound:
     def __init__(self):
         # client class
         self.bg_client = BitGetApi()
@@ -40,7 +40,7 @@ class Trading:
 
         self.rule_rebound_ma100 = None
         self.hour_skip_rule = True
-        self.time_hour_skip_rule = None
+        self.time_hour_skip_rule = datetime.datetime.now() - datetime.timedelta(hours=1)
 
     # --------------------------------------------------------------------------------------------------------------------
     def open_position(self, side):
@@ -72,7 +72,7 @@ class Trading:
             self.stop_loss = -1000
             # self.take_profit = 0
             self.internal_trend_direction = None
-            # self.rule_rebound_ma100 = False
+            self.rule_rebound_ma100 = None
 
         except Exception as err:
             self.logg.logger(f'ERROR_EXIT_FROM_POSITION', f'status: {logg_text} text: {err}')
@@ -80,10 +80,13 @@ class Trading:
     def get_percentage_distance(self, price_now):
         return abs(self.price_break_ma100 - price_now) / self.price_break_ma100
 
+    def get_close_candle_time(self):
+        return (datetime.datetime.now().minute + 1) % self.period == 0 and \
+                        datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 900000
+
     # --------------------------------------------------------------------------------------------------------------------
 
     def start(self):
-        self.logg.logger('START_BOT', 'start')
         print('\nalive')
 
         # getting time first break
@@ -103,14 +106,22 @@ class Trading:
                                  f' time_break = {self.time_rule_break_ma100}')
                 break
 
+        # print(ma100[-1])
+        # self.order_id, self.order_quantity = self.bg_client.get_order(
+        #     symbol=self.config.symbol_basic_usdt_bg, side='open_short', price=round(ma100[-1], 4))
+        #
+        # print('success')
+        # sys.exit()
+
         while True:
             if self.trade:
-                if (datetime.datetime.now().minute + 1) % self.period == 0 and \
-                        datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 900000:
+                if self.get_close_candle_time():
                     # data
                     candles, color = self.bc_client.get_candles()
                     close = list(candles['close'])
+                    # print(close[-1])
                     ma100 = self.indicator.ma100(candles)
+                    # print(ma100[-3:])
 
                     # control break ma100
                     if ((not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
@@ -122,22 +133,26 @@ class Trading:
                                          f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction};'
                                          f' time_break = {self.time_rule_break_ma100}')
 
+                    price_for_distance = list(candles['low'])[-1] if close[-1] < ma100[-1] \
+                        else list(candles['high'])[-1]
+                    self.logg.logger('PERCENT_DISTANCE',
+                                     f'{round(self.get_percentage_distance(price_for_distance) * 100, 2)}%')
+
                     # ---------------------------------------------------------------------------------------------
                     #  rule_rebound_ma100
                     try:
                         if self.rule_rebound_ma100 is None and (
-                                datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 2 and \
-                                not (self.time_hour_skip_rule is None) and \
+                                datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 0.1 and \
                                 (datetime.datetime.now() - self.time_hour_skip_rule).seconds / 3600 >= 1:
 
                             if self.trend_direction == 'short' and close[-1] < ma100[-1] and \
-                                    self.get_percentage_distance(list(candles['low'])[-1]) >= 0.02:
+                                    self.get_percentage_distance(list(candles['low'])[-1]) >= 0.01:
                                 self.rule_rebound_ma100 = True
                                 self.logg.logger('APPROVE_RULE_REBOUND_MA100',
                                                  f'price_for_distance = {list(candles["low"])[-1]}; '
                                                  f'side_accuses = long')
                             elif self.trend_direction == 'long' and close[-1] > ma100[-1] and \
-                                    self.get_percentage_distance(list(candles['high'])[-1]) >= 0.02:
+                                    self.get_percentage_distance(list(candles['high'])[-1]) >= 0.01:
                                 self.rule_rebound_ma100 = True
                                 self.logg.logger('APPROVE_RULE_REBOUND_MA100',
                                                  f'price_for_distance = {list(candles["high"])[-1]}; '
@@ -156,9 +171,10 @@ class Trading:
                             else:
                                 local_side = 'open_long'
 
-                            self.order_id, self.price_open, self.order_quantity = self.bg_client.get_order(
-                                symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=ma100[-1])
-                            self.logg.logger('OPEN_LIMIT_ORDER', 'open limit order')
+                            self.order_id, self.order_quantity = self.bg_client.get_order(
+                                symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=round(ma100[-1], 4))
+                            self.price_open = round(ma100[-1], 4)
+                            self.logg.logger('OPEN_LIMIT_ORDER', f'price = {round(ma100[-1], 4)}')
 
                             while True:
                                 if self.bg_client.get_status(symbol=self.config.symbol_basic_usdt_bg,
@@ -171,7 +187,7 @@ class Trading:
                                     break
 
                                 if (datetime.datetime.now().minute + 1) % self.period == 0 and \
-                                        datetime.datetime.now().second >= 58:
+                                        datetime.datetime.now().second >= 59:
                                     break
 
                     except Exception as err:
@@ -184,6 +200,9 @@ class Trading:
 
                 if profit >= self.take_profit:
                     self.close_position(self.side, f'exit due take-profit ({profit}%)')
+
+                if self.stop_loss >= profit:
+                    self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
                 # data
                 candles, color = self.bc_client.get_candles()
@@ -198,9 +217,8 @@ class Trading:
                         self.close_position(self.side, f'exit due bounce down')
 
                 if self.rule_rebound_ma100:
-                    # выход при закрытии свечки в диапазоне -0,05% до +бесконечности, закрываем рыночным ордером
-                    if (self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or \
-                            (self.side == 'long' and close[-1] <= ma100[-1] * 1.005):
+                    # выход при закрытии свечки в диапазоне -0,05% до +-бесконечности, закрываем рыночным ордером
+                    if self.get_close_candle_time() and ((self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or (self.side == 'long' and close[-1] <= ma100[-1] * 1.005))():
                         self.close_position(self.side, f'exit due failed rebound')
                         local_side = self.side
                         # check rebound for 1-hour blocked rule_rebound_ma100
@@ -213,7 +231,11 @@ class Trading:
                                 (local_side == 'short' and close[-1] <= ma100[-1]):
                             self.time_hour_skip_rule = datetime.datetime.now()
                             self.logg.logger('ACTIVATE_1_HOUR_SKIP', '1 hour skip')
-                if profit >= 0.5:
-                    self.stop_loss = 0.2
-                elif profit >= 0.4:
+
+                if profit >= 0.4 and self.stop_loss == -1000:
                     self.stop_loss = 0.1
+                    self.logg.logger('STOP-LOSS_CHANGED', 'first step')
+                if profit >= 0.5 and self.stop_loss > 0:
+                    self.stop_loss = 0.2
+                    self.logg.logger('STOP-LOSS_CHANGED', 'second step')
+

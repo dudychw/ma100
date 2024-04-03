@@ -1,6 +1,6 @@
 class Config:
     # basic data
-    period_int = 15
+    period_int = 1
     basic_symbol = 'FTM'
     n_candles = 101
 
@@ -15,6 +15,7 @@ class Config:
 
     symbol_basic_usdt_bg = f'{basic_symbol}USDT_UMCBL'
 
+
     # tradingview data
     exchange_tv = 'CRYPTOCAP'
     symbol_btcd = 'BTC.D'
@@ -25,7 +26,7 @@ class Config:
     # binance data
     symbol_basic_usdt_bc = f'{basic_symbol}USDT'
     symbol_btc_usdt_bc = 'BTCUSDT'
-    period_bc = f'{period_int}m'
+    period_str = f'{period_int}m'
 
 
 

@@ -14,7 +14,7 @@ class Binance_API:
         try:
             # get candles data
             candles = [(el[0], float(el[1]), float(el[2]), float(el[3]), float(el[4]))
-                       for el in self.binance_spot_client.klines(symbol=symbol, interval=Config.period_bc,
+                       for el in self.binance_spot_client.klines(symbol=symbol, interval=Config.period_str,
                                                                  startTime=time_start, endTime=time_end)]
 
             return pd.DataFrame({
@@ -31,7 +31,7 @@ class Binance_API:
         try:
             # get candles data
             candles = [(el[0], float(el[1]), float(el[2]), float(el[3]), float(el[4]))
-                       for el in self.binance_spot_client.klines(symbol=symbol, interval=Config.period_bc, limit=n)]
+                       for el in self.binance_spot_client.klines(symbol=symbol, interval=Config.period_str, limit=n)]
             return pd.DataFrame({
                 'ts': [float(el[0]) for el in candles],
                 'open': [float(el[1]) for el in candles],
