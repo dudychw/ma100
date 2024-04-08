@@ -88,7 +88,7 @@ class BreakMa100:
 
         # getting data  first break
         n = 500
-        candles, color = self.bc_client.get_candles(n=n)
+        candles, color = self.bg_client.get_candles(n=n)
         close = list(candles['close'])
         ma100 = self.indicator.ma100(candles)
         for i in range(n - 1, 1, -1):
@@ -108,7 +108,7 @@ class BreakMa100:
                 if (datetime.datetime.now().minute + 1) % self.period == 0 and \
                         datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 900000:
                     # data
-                    candles, color = self.bc_client.get_candles()
+                    candles, color = self.bg_client.get_candles()
                     close = list(candles['close'])
                     ma100 = self.indicator.ma100(candles)
 
@@ -166,7 +166,7 @@ class BreakMa100:
                                             #                                 f'side = {self.internal_trend_direction}')
                                             count_attempt += 1
                                             time.sleep(self.config.period_int * 60 - 0.05)
-                                            candles, color = self.bc_client.get_candles()
+                                            candles, color = self.bg_client.get_candles()
                                             self.internal_trend_direction = 'long' if not color else 'short'
                                             close = list(candles['close'])
                                             ma100 = self.indicator.ma100(candles)
@@ -190,7 +190,7 @@ class BreakMa100:
                     self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
                 # data
-                candles, color = self.bc_client.get_candles()
+                candles, color = self.bg_client.get_candles()
                 close = list(candles['close'])
                 ma100 = self.indicator.ma100(candles)
 

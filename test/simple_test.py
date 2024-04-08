@@ -1,2 +1,9 @@
-a = (500, '{"code":-1001,"msg":"Internal error; unable to process your request. Please try again."}')
-print('1001' in a[1])
+
+
+while True:
+    x = int(input())
+    try:
+        print(5/x)
+    except Exception as err:
+        print('error' + str(err))
+    print('try again')

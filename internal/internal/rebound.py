@@ -91,7 +91,7 @@ class Rebound:
 
         # getting time first break
         n = 500
-        candles, color = self.bc_client.get_candles(n=n)
+        candles, color = self.bg_client.get_candles(n=n)
         close = list(candles['close'])
         ma100 = self.indicator.ma100(candles)
         for i in range(n - 1, 1, -1):
@@ -117,7 +117,7 @@ class Rebound:
             if self.trade:
                 if self.get_close_candle_time():
                     # data
-                    candles, color = self.bc_client.get_candles()
+                    candles, color = self.bg_client.get_candles()
                     close = list(candles['close'])
                     # print(close[-1])
                     ma100 = self.indicator.ma100(candles)
@@ -170,9 +170,17 @@ class Rebound:
                                 local_side = 'open_short'
                             else:
                                 local_side = 'open_long'
-
-                            self.order_id, self.order_quantity = self.bg_client.get_order(
-                                symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=round(ma100[-1], 4))
+                            try:
+                                self.order_id,  self.order_quantity = self.bg_client.get_order(
+                                    symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=round(ma100[-1], 4))
+                            except Exception as err:
+                                if '40768' in str(err):
+                                    self.order_id, self.order_quantity = self.bg_client.get_order(
+                                        symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=round(ma100[-1], 4))
+                                else:
+                                    self.logg.logger('LOCAL_ORDER_ERROR', err)
+                                    sys.exit()
+                                
                             self.price_open = round(ma100[-1], 4)
                             self.logg.logger('OPEN_LIMIT_ORDER', f'price = {round(ma100[-1], 4)}')
 
@@ -205,7 +213,7 @@ class Rebound:
                     self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
                 # data
-                candles, color = self.bc_client.get_candles()
+                candles, color = self.bg_client.get_candles()
                 close = list(candles['close'])
                 ma100 = self.indicator.ma100(candles)
 
@@ -223,7 +231,7 @@ class Rebound:
                         local_side = self.side
                         # check rebound for 1-hour blocked rule_rebound_ma100
                         time.sleep(self.config.period_int * 60 - 0.01)
-                        candles, color = self.bc_client.get_candles()
+                        candles, color = self.bg_client.get_candles()
                         close = list(candles['close'])
                         ma100 = self.indicator.ma100(candles)
 

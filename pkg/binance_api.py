@@ -25,7 +25,7 @@ class Binance_API:
                 'close': [float(el[4]) for el in candles]
             })
         except Exception as err:
-            self.logg.logger('GET_CANDLES_DF_ERROR', f'text: {err}')
+            self.logg.logger('GET_CANDLES_DF_TIME_ERROR', f'text: {err}')
 
     def df_candles(self, symbol, n):
         try:

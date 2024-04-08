@@ -1,5 +1,7 @@
 import datetime
 import random
+import sys
+import time
 
 from config.config import Config
 from pkg.binance_api import Binance_API
@@ -14,6 +16,7 @@ import numpy as np
 class HistoryTest:
     def __init__(self):
         self.bc_client = Binance_API()
+        self.bg_client = BitGetApi()
         self.logg = Logger()
         self.config = Config()
         self.indicator = Indicator()
@@ -23,26 +26,32 @@ class HistoryTest:
         self.stop_hour_skip = 10
 
     def history_test(self):
-        n = 360 * 1
+        # n = 360 * 1
+        n = 51
+
+        step = 1
 
         time_end = datetime.datetime.now()
-        time_start = time_end - datetime.timedelta(days=5)
-        candles = self.bc_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bc,
+        time_start = time_end - datetime.timedelta(days=step)
+        candles = self.bg_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bg,
                                                  time_start=int(time_start.timestamp()) * 1000,
                                                  time_end=int(time_end.timestamp()) * 1000,
                                                  )
-
-        for i in range(n // 5 - 1):
+        for i in range(int(n / step)):
             time_end = time_start
-            time_start = time_end - datetime.timedelta(days=5)
-            add_candles = self.bc_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bc,
+            time_start = time_end - datetime.timedelta(days=step)
+            add_candles = self.bg_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bg,
                                                          time_start=int(time_start.timestamp()) * 1000,
                                                          time_end=int(time_end.timestamp()) * 1000,
                                                          )
+            # print(i, len(candles), len(add_candles))
             candles = pd.concat([add_candles, candles], ignore_index=True, sort=False)
 
         close = list(candles['close'])[99:]
         ma100 = self.indicator.ma100(candles)[99:]
+        # print(candles.to_string())
+        # print((n + step) * 24 * 4)
+        # sys.exit()
 
         data = []
         for i in range(1, len(close)):
@@ -124,8 +133,8 @@ class HistoryTest:
                     profit *= 1 - abs(list(out_order['profit_down%'])[el]) / 100
                     c += 1
                 else:
-                    # profit *= (el / (3 * 100) + 1)
-                    profit *= random.randint(1010, 1040) / 1000
+                    profit *= 1.02
+                    # profit *= random.randint(1010, 1040) / 1000
             profit = round((profit - 1) * 100, 2)
 
             out_order = out_order.sort_values('profit%', ascending=False)

@@ -13,8 +13,26 @@ class BitGetApi:
                               use_server_time=False)
         self.logg = Logger()
 
+    def df_candles_time(self, symbol, time_start, time_end):
+        try:
+            # get candles data
+            candles = self.iClient.mix_get_candles(symbol=symbol,
+                                                   granularity=self.config.period_str,
+                                                   startTime=time_start,
+                                                   endTime=time_end)
+
+            return pd.DataFrame({
+                'ts': [float(el[0]) for el in candles],
+                'open': [float(el[1]) for el in candles],
+                'high': [float(el[2]) for el in candles],
+                'low': [float(el[3]) for el in candles],
+                'close': [float(el[4]) for el in candles]
+            })
+        except Exception as err:
+            self.logg.logger('GET_CANDLES_DF_ERROR', f'text: {err}')
+
     def df_candles(self, symbol, n):
-        # try:
+        try:
             # get candles data
             time_end = datetime.datetime.now()
             time_start = (time_end - datetime.timedelta(minutes=n * self.config.period_int))
@@ -29,8 +47,8 @@ class BitGetApi:
                 'low': [float(el[3]) for el in candles],
                 'close': [float(el[4]) for el in candles]
             })
-        # except Exception as err:
-        #     self.logg.logger('GET_CANDLES_BG_ERROR', f'text: {err}')
+        except Exception as err:
+            self.logg.logger('GET_CANDLES_BG_ERROR', f'text: {err}')
 
     def df_candles_and_colour(self, symbol, colour=False, n=None):
         if n is None:
@@ -106,7 +124,3 @@ class BitGetApi:
 
     def get_status(self, symbol, order_id):
         return self.iClient.mix_get_order_details(symbol=symbol, orderId=order_id)['data']['state'] == 'filled'
-
-
-candles, color = BitGetApi().get_candles()
-print(candles)
