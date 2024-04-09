@@ -1,6 +1,6 @@
 class Config:
     # basic data
-    period_int = 1
+    period_int = 15
     basic_symbol = 'FTM'
     n_candles = 101
 
