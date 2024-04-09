@@ -8,7 +8,7 @@ from pkg.logger import Logger
 from config.config import Config
 
 
-class BreakMa100:
+class Trading:
     def __init__(self):
         # client class
         self.bg_client = BitGetApi()
