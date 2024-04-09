@@ -43,19 +43,6 @@ class Rebound:
         self.time_hour_skip_rule = datetime.datetime.now() - datetime.timedelta(hours=1)
 
     # --------------------------------------------------------------------------------------------------------------------
-    def open_position(self, side):
-        try:
-            self.price_open, self.order_quantity = self.bg_client.get_order(
-                self.config.symbol_basic_usdt_bg, f'open_{side}')
-            self.logg.logger('OPEN_POSITION', f'open {side}')
-            self.time_trade = datetime.datetime.now()
-            self.side = side
-            self.trade = False
-            # self.take_profit = 2
-            # self.stop_loss = -2
-
-        except Exception as err:
-            self.logg.logger(f'ERROR_OPEN_POSITION', f'text: {err}')
 
     def close_position(self, side, logg_text):
         try:
@@ -64,14 +51,14 @@ class Rebound:
 
             self.logg.logger('EXIT_FROM_POSITION', f'{logg_text} ({side})')
 
+            self.order_id = None
             self.side = ''
             self.price_open = None
             self.order_quantity = None
             self.trade = True
+            self.internal_trend_direction = None
 
             self.stop_loss = -1000
-            # self.take_profit = 0
-            self.internal_trend_direction = None
             self.rule_rebound_ma100 = None
 
         except Exception as err:
@@ -82,7 +69,7 @@ class Rebound:
 
     def get_close_candle_time(self):
         return (datetime.datetime.now().minute + 1) % self.period == 0 and \
-                        datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 900000
+            datetime.datetime.now().second == 59 and datetime.datetime.now().microsecond > 900000
 
     # --------------------------------------------------------------------------------------------------------------------
 
@@ -106,22 +93,13 @@ class Rebound:
                                  f' time_break = {self.time_rule_break_ma100}')
                 break
 
-        # print(ma100[-1])
-        # self.order_id, self.order_quantity = self.bg_client.get_order(
-        #     symbol=self.config.symbol_basic_usdt_bg, side='open_short', price=round(ma100[-1], 4))
-        #
-        # print('success')
-        # sys.exit()
-
         while True:
             if self.trade:
                 if self.get_close_candle_time():
                     # data
                     candles, color = self.bg_client.get_candles()
                     close = list(candles['close'])
-                    # print(close[-1])
                     ma100 = self.indicator.ma100(candles)
-                    # print(ma100[-3:])
 
                     # control break ma100
                     if ((not color and close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
@@ -170,19 +148,13 @@ class Rebound:
                                 local_side = 'open_short'
                             else:
                                 local_side = 'open_long'
-                            try:
-                                self.order_id,  self.order_quantity = self.bg_client.get_order(
-                                    symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=round(ma100[-1], 4))
-                            except Exception as err:
-                                if '40768' in str(err):
-                                    self.order_id, self.order_quantity = self.bg_client.get_order(
-                                        symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=round(ma100[-1], 4))
-                                else:
-                                    self.logg.logger('LOCAL_ORDER_ERROR', err)
-                                    sys.exit()
-                                
-                            self.price_open = round(ma100[-1], 4)
-                            self.logg.logger('OPEN_LIMIT_ORDER', f'price = {round(ma100[-1], 4)}')
+
+                            price_limit_order = round(sum(close[-100:]) / 100, 4)
+                            self.order_id, self.order_quantity = self.bg_client.get_order(
+                                symbol=self.config.symbol_basic_usdt_bg, side=local_side, price=price_limit_order)
+
+                            self.price_open = price_limit_order
+                            self.logg.logger('OPEN_LIMIT_ORDER', f'price = {price_limit_order}')
 
                             while True:
                                 if self.bg_client.get_status(symbol=self.config.symbol_basic_usdt_bg,
@@ -206,9 +178,6 @@ class Rebound:
             else:
                 profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
-                if profit >= self.take_profit:
-                    self.close_position(self.side, f'exit due take-profit ({profit}%)')
-
                 if self.stop_loss >= profit:
                     self.close_position(self.side, f'exit due stop-loss ({profit}%)')
 
@@ -217,16 +186,13 @@ class Rebound:
                 close = list(candles['close'])
                 ma100 = self.indicator.ma100(candles)
 
-                # rebound down
-                if (datetime.datetime.now().minute + 1) % self.period == 0 and \
-                        datetime.datetime.now().second == 59:
-                    if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
-                            (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
-                        self.close_position(self.side, f'exit due bounce down')
-
                 if self.rule_rebound_ma100:
+                    if profit >= self.take_profit:
+                        self.close_position(self.side, f'exit due take-profit ({profit}%)')
+
                     # выход при закрытии свечки в диапазоне -0,05% до +-бесконечности, закрываем рыночным ордером
-                    if self.get_close_candle_time() and ((self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or (self.side == 'long' and close[-1] <= ma100[-1] * 1.005))():
+                    if self.get_close_candle_time() and ((self.side == 'short' and close[-1] >= ma100[-1] * 0.995) or (
+                            self.side == 'long' and close[-1] <= ma100[-1] * 1.005)):
                         self.close_position(self.side, f'exit due failed rebound')
                         local_side = self.side
                         # check rebound for 1-hour blocked rule_rebound_ma100
@@ -240,10 +206,9 @@ class Rebound:
                             self.time_hour_skip_rule = datetime.datetime.now()
                             self.logg.logger('ACTIVATE_1_HOUR_SKIP', '1 hour skip')
 
-                if profit >= 0.4 and self.stop_loss == -1000:
-                    self.stop_loss = 0.1
-                    self.logg.logger('STOP-LOSS_CHANGED', 'first step')
-                if profit >= 0.5 and self.stop_loss > 0:
-                    self.stop_loss = 0.2
-                    self.logg.logger('STOP-LOSS_CHANGED', 'second step')
-
+                    if profit >= 0.4 and self.stop_loss == -1000:
+                        self.stop_loss = 0.1
+                        self.logg.logger('STOP-LOSS_CHANGED', 'first step')
+                    if profit >= 0.5 and self.stop_loss > 0:
+                        self.stop_loss = 0.2
+                        self.logg.logger('STOP-LOSS_CHANGED', 'second step')

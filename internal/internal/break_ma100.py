@@ -70,10 +70,10 @@ class BreakMa100:
             self.price_open = None
             self.order_quantity = None
             self.trade = True
+            self.internal_trend_direction = None
 
             self.stop_loss = -1000
             self.rule_break_ma100 = None
-            self.internal_trend_direction = None
 
         except Exception as err:
             self.logg.logger(f'ERROR_EXIT_FROM_POSITION', f'status: {logg_text} text: {err}')
