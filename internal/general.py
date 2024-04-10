@@ -44,7 +44,7 @@ class Trading:
 
         self.rule_rebound_ma100 = None
         self.hour_skip_rule = True
-        self.time_hour_skip_rule = None
+        self.time_hour_skip_rule = datetime.datetime.now() - datetime.timedelta(hours=1)
 
     # --------------------------------------------------------------------------------------------------------------------
     def open_position_break_ma100(self, side):
