@@ -118,9 +118,10 @@ class BreakMa100:
                         self.price_break_ma100 = ma100[-1]
                         self.time_rule_break_ma100 = datetime.datetime.now()
                         self.trend_direction = 'long' if not color else 'short'
-                        self.logg.logger('BREAK_MA100',
-                                         f'price_break_ma100 = {self.price_break_ma100}; side = {self.trend_direction};'
-                                         f' time_break = {self.time_rule_break_ma100}')
+                        # self.logg.logger('BREAK_MA100',
+                        #                 f'price_break_ma100 = {self.price_break_ma100};
+                        #                 side = {self.trend_direction};'
+                        #                  f' time_break = {self.time_rule_break_ma100}')
 
                     # ---------------------------------------------------------------------------------------------
                     # rule_break_ma100
