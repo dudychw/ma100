@@ -47,24 +47,24 @@ class BreakMa100:
         self.time_hour_skip_rule = None
 
     # --------------------------------------------------------------------------------------------------------------------
-    def open_position(self, side):
+    def open_position(self):
         try:
             self.price_open, self.order_quantity = self.bg_client.get_order(
-                self.config.symbol_basic_usdt_bg, f'open_{side}')
-            self.logg.logger('OPEN_POSITION', f'price_open = {self.price_open} ({side})')
+                self.config.symbol_basic_usdt_bg, f'open_{self.trend_direction}')
+            self.logg.logger('OPEN_POSITION', f'price_open = {self.price_open} ({self.trend_direction})')
             self.time_trade = datetime.datetime.now()
-            self.side = side
+            self.side = self.trend_direction
             self.trade = False
 
         except Exception as err:
             self.logg.logger(f'ERROR_OPEN_POSITION', f'text: {err}')
 
-    def close_position(self, side, logg_text):
+    def close_position(self, logg_text):
         try:
             price_close, self.order_quantity = self.bg_client.get_order(
-                self.config.symbol_basic_usdt_bg, f'close_{side}', self.order_quantity)
+                self.config.symbol_basic_usdt_bg, f'close_{self.side}', self.order_quantity)
 
-            self.logg.logger('EXIT_FROM_POSITION', f'{logg_text}; price_close = {price_close}; ({side})')
+            self.logg.logger('EXIT_FROM_POSITION', f'{logg_text}; price_close = {price_close}; ({self.side})')
 
             self.side = ''
             self.price_open = None
