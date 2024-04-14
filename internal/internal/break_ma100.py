@@ -160,7 +160,7 @@ class BreakMa100:
                                             close[-1] <= ma100[-1] and self.trend_direction == 'short'):
 
                                         if count_attempt != 0 and self.internal_trend_direction == self.trend_direction:
-                                            self.open_position(self.trend_direction)
+                                            self.open_position()
                                             break
                                         else:
                                             self.logg.logger('ATTEMPT_OPEN_POSITION', f'num - {count_attempt}; '
@@ -188,7 +188,7 @@ class BreakMa100:
                 profit, price_now = self.bg_client.bg_get_profit(self.price_open, self.side)
 
                 if profit <= self.stop_loss:
-                    self.close_position(self.side, f'exit due stop-loss ({profit}%)')
+                    self.close_position(f'exit due stop-loss ({profit}%)')
 
                 # data
                 candles, color = self.bg_client.get_candles()
@@ -201,11 +201,11 @@ class BreakMa100:
                             datetime.datetime.now().second == 59:
                         if ((close[-2] < ma100[-2] and close[-1] > ma100[-1]) or
                                 (close[-2] > ma100[-2] and close[-1] < ma100[-1])):
-                            self.close_position(self.side, f'exit due bounce down')
+                            self.close_position(f'exit due bounce down')
 
                     # trailing stop-loss
                     if profit >= 1.5:
                         self.stop_loss = max(profit - 0.5, self.stop_loss)
 
                     if profit < 1.5 and (datetime.datetime.now() - self.time_trade).seconds / 3600 >= 5:
-                        self.close_position(self.side, f'exit due 5 hour stagnation ({profit}%)')
+                        self.close_position(f'exit due 5 hour stagnation ({profit}%)')
