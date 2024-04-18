@@ -22,25 +22,25 @@ class HistoryTest:
         self.indicator = Indicator()
 
         self.period = self.config.period_int
-        self.hour_skip = 0
-        self.stop_hour_skip = 10
+        self.hour_skip = 4
+        self.stop_hour_skip = 4
 
     def history_test(self):
-        # n = 360 * 1
-        n = 51
+        n = 360 * 1
+        # n = 100
 
-        step = 1
+        step = 5
 
         time_end = datetime.datetime.now()
         time_start = time_end - datetime.timedelta(days=step)
-        candles = self.bg_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bg,
+        candles = self.bc_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bc,  # менять токен
                                                  time_start=int(time_start.timestamp()) * 1000,
                                                  time_end=int(time_end.timestamp()) * 1000,
                                                  )
         for i in range(int(n / step)):
             time_end = time_start
             time_start = time_end - datetime.timedelta(days=step)
-            add_candles = self.bg_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bg,
+            add_candles = self.bc_client.df_candles_time(symbol=self.config.symbol_basic_usdt_bc,
                                                          time_start=int(time_start.timestamp()) * 1000,
                                                          time_end=int(time_end.timestamp()) * 1000,
                                                          )
@@ -115,12 +115,12 @@ class HistoryTest:
 
             path = './test/result/history_test_all.txt'
 
-            # with open(path, "w") as f:
-            #     f.write("")
-            #
-            # with open(path, 'a') as f:
-            #     text = out.to_string(header=True, index=True)
-            #     f.write(text)
+            with open(path, "w") as f:
+                f.write("")
+
+            with open(path, 'a') as f:
+                text = out.to_string(header=True, index=True)
+                f.write(text)
             # -------------------------------------------------
 
             out_order = out.loc[
@@ -137,16 +137,16 @@ class HistoryTest:
                     # profit *= random.randint(1010, 1040) / 1000
             profit = round((profit - 1) * 100, 2)
 
-            out_order = out_order.sort_values('profit%', ascending=False)
+            out_order = out_order.sort_values('max_cndl%', ascending=False)
 
-            # path = './test/result/history_test.txt'
-
-            # with open(path, "w") as f:
-            #     f.write("")
+            path = './test/result/history_test.txt'
             #
-            # with open(path, 'a') as f:
-            #     text = out_order.to_string(header=True, index=True)
-            #     f.write(text)
+            with open(path, "w") as f:
+                f.write("")
+
+            with open(path, 'a') as f:
+                text = out_order.to_string(header=True, index=True)
+                f.write(text)
 
             with open('./test/result/result.txt', 'a') as f:
                 a = round((c / len(list(out_order['profit%']))) * 100, 2)

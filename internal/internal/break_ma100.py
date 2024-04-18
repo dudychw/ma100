@@ -57,6 +57,9 @@ class BreakMa100:
             self.trade = False
 
         except Exception as err:
+            # evacuation order
+            self.side = self.trend_direction
+            self.close_position('EVACUATION_ORDER')
             self.logg.logger(f'ERROR_OPEN_POSITION', f'text: {err}')
 
     def close_position(self, logg_text):
@@ -77,6 +80,8 @@ class BreakMa100:
 
         except Exception as err:
             self.logg.logger(f'ERROR_EXIT_FROM_POSITION', f'status: {logg_text} text: {err}')
+            # recursive call for an evacuation order
+            self.close_position('EVACUATION_ORDER')
 
     def get_percentage_distance(self, price_now):
         return abs(self.price_break_ma100 - price_now) / self.price_break_ma100
@@ -86,11 +91,20 @@ class BreakMa100:
     def start(self):
         print('\nalive')
 
+        # 1) получить в начале массив из 500 свечей и после расчёта первого пробития отрезать от него до 101 свечи
+        # 2) реализовать добавление одной свечи в конец и удаления одной с начала (т.к. запрашивать 1 быстрее, чем 101*)
+        # 3) сохранять значение -1 и -2 свечи в полях
+        # *4) считать ma100 относительно новой полученной свечки, а не пересчитывать из массива
+        # (тогда массив в целом и не нужен будет)
+        # 5)
+        # короч нужна нормальная система кеширования
+
         # getting data  first break
         n = 500
         candles, color = self.bg_client.get_candles(n=n)
         close = list(candles['close'])
         ma100 = self.indicator.ma100(candles)
+
         for i in range(n - 1, 1, -1):
             if ((close[i - 1] < ma100[i - 1] and close[i] > ma100[i]) or
                     (close[i - 1] > ma100[i - 1] and close[i] < ma100[i])):
@@ -127,19 +141,13 @@ class BreakMa100:
                     # rule_break_ma100
                     try:
                         if self.rule_break_ma100 is None and (
-                                datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 4:
-                            if self.trend_direction == 'short' and close[-1] < ma100[-1] and \
-                                    self.get_percentage_distance(list(candles['low'])[-1]) >= 0.04:
-                                self.rule_break_ma100 = True
-                                self.logg.logger('APPROVE_RULE_BREAK_MA100',
-                                                 f'price_for_distance = {list(candles["low"])[-1]}; '
-                                                 f'side_accuses = long')
-                            elif self.trend_direction == 'long' and close[-1] > ma100[-1] and \
-                                    self.get_percentage_distance(list(candles['high'])[-1]) >= 0.04:
-                                self.rule_break_ma100 = True
-                                self.logg.logger('APPROVE_RULE_BREAK_MA100',
-                                                 f'price_for_distance = {list(candles["high"])[-1]}; '
-                                                 f'side_accuses = short')
+                                datetime.datetime.now() - self.time_rule_break_ma100).seconds / 3600 >= 4 \
+                                and self.get_percentage_distance(list(candles["high"])[-1]
+                                                                 if self.trend_direction == 'long' else
+                                                                 list(candles["low"])[-1]) >= 0.04:
+                            self.rule_break_ma100 = True
+                            self.logg.logger('APPROVE_RULE_BREAK_MA100',
+                                             f'side_accuses = {self.trend_direction}')
 
                         if self.rule_break_ma100:
 

@@ -24,3 +24,17 @@
 2024-04-08 17:15:49.639675 | fail - 1 (12.5%); good - 7 (87.5%) | profit: 11.85 | time_test: 56 | time_skip: 10
 
 
+2024-04-18 03:51:57.303389 | fail - 21 (46.67%); good - 24 (53.33%) | profit: 7.15 | time_test: 56 | time_skip: 0
+2024-04-18 03:51:57.810944 | fail - 9 (30.0%); good - 21 (70.0%) | profit: 24.28 | time_test: 56 | time_skip: 1
+2024-04-18 03:51:58.380066 | fail - 3 (15.0%); good - 17 (85.0%) | profit: 28.59 | time_test: 56 | time_skip: 2
+2024-04-18 03:51:59.016988 | fail - 2 (11.11%); good - 16 (88.89%) | profit: 32.58 | time_test: 56 | time_skip: 3
+2024-04-18 03:51:59.594161 | fail - 1 (6.67%); good - 14 (93.33%) | profit: 30.75 | time_test: 56 | time_skip: 4
+2024-04-18 03:52:00.154342 | fail - 0 (0.0%); good - 14 (100.0%) | profit: 31.95 | time_test: 56 | time_skip: 5
+2024-04-18 03:52:00.696625 | fail - 0 (0.0%); good - 14 (100.0%) | profit: 31.95 | time_test: 56 | time_skip: 6
+2024-04-18 03:52:01.294870 | fail - 0 (0.0%); good - 14 (100.0%) | profit: 31.95 | time_test: 56 | time_skip: 7
+2024-04-18 03:52:01.886590 | fail - 2 (15.38%); good - 11 (84.62%) | profit: 20.21 | time_test: 56 | time_skip: 8
+2024-04-18 03:52:02.455142 | fail - 0 (0.0%); good - 9 (100.0%) | profit: 19.51 | time_test: 56 | time_skip: 9
+2024-04-18 03:52:49.746053 | fail - 1 (6.67%); good - 14 (93.33%) | profit: 30.75 | time_test: 56 | time_skip: 4
+2024-04-18 03:54:58.747885 | fail - 1 (6.67%); good - 14 (93.33%) | profit: 30.75 | time_test: 56 | time_skip: 4
+2024-04-18 03:58:38.254087 | fail - 4 (19.05%); good - 17 (80.95%) | profit: 32.35 | time_test: 105 | time_skip: 4
+2024-04-18 04:02:37.388684 | fail - 18 (31.58%); good - 39 (68.42%) | profit: 55.62 | time_test: 365 | time_skip: 4
